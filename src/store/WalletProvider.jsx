@@ -1,0 +1,272 @@
+/**
+ * 🔗 REAL IOTA WALLET PROVIDER
+ *
+ * Features:
+ * - Real IOTA wallet integration (Firefly, MetaMask Snap)
+ * - Blockchain-based authentication
+ * - Wallet address as unique user ID
+ * - Auto account creation for new users
+ * - IOTA Testnet support with real transactions
+ */
+
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import { toast } from 'react-hot-toast'
+import { iotaClient } from '@utils/iotaClient'
+import { iotaIdentity } from '@utils/iotaIdentity'
+
+// 🔗 IOTA Wallet Context - Real blockchain authentication
+const WalletContext = createContext()
+
+export const useWallet = () => {
+  const context = useContext(WalletContext)
+  if (!context) {
+    throw new Error('useWallet must be used within a WalletProvider')
+  }
+  return context
+}
+
+export const WalletProvider = ({ children }) => {
+  const [isConnected, setIsConnected] = useState(false)
+  const [address, setAddress] = useState('')
+  const [balance, setBalance] = useState('0')
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [network, setNetwork] = useState('testnet')
+  const [userType, setUserType] = useState(null) // 'recycler' or 'collector'
+  const [isNewUser, setIsNewUser] = useState(false)
+
+  // 🔗 REAL IOTA WALLET CONNECTION
+  const connectWallet = async (walletType = 'existing') => {
+    setIsConnecting(true)
+
+    try {
+      // Initialize IOTA client
+      await iotaClient.initialize()
+
+      if (walletType === 'new') {
+        // 🆕 AUTO CREATE NEW IOTA ACCOUNT
+        const toastId = toast.loading('Creating new IOTA account on testnet...', { duration: 3000 })
+
+        const result = await iotaClient.createNewWallet()
+
+        if (!result.success) {
+          throw new Error(result.error)
+        }
+
+        setAddress(result.address)
+        setBalance(result.balance)
+        setIsConnected(true)
+        setIsNewUser(true)
+
+        // Create IOTA Identity for new user
+        const identityResult = await iotaIdentity.createDID(result.address, 'individual')
+        if (identityResult.success) {
+          console.log('🆔 IOTA Identity created:', identityResult.did)
+        }
+
+        // Show different message based on wallet type
+        if (result.isDemo) {
+          toast.success('🎉 Demo IOTA account created! (IOTA SDK not available)', { id: toastId })
+        } else {
+          toast.success('🎉 Real IOTA account created! Requesting testnet tokens...', { id: toastId })
+          if (result.mnemonic) {
+            console.log('🔑 BACKUP YOUR MNEMONIC:', result.mnemonic)
+            toast('🔑 Mnemonic saved to console - backup for recovery!', {
+              duration: 5000,
+              icon: '⚠️'
+            })
+          }
+        }
+
+        // Wait a bit then check balance
+        setTimeout(async () => {
+          const newBalance = await iotaClient.getBalance(result.address)
+          setBalance(newBalance.toString())
+          if (newBalance > 0) {
+            toast.success('💰 Testnet tokens received!')
+          }
+        }, 5000)
+
+      } else {
+        // 🔗 CONNECT EXISTING WALLET
+        const toastId = toast.loading('Connecting to IOTA wallet...', { duration: 2000 })
+
+        const result = await iotaClient.connectExistingWallet()
+
+        if (!result.success) {
+          if (result.needsNewWallet) {
+            toast.error('No wallet found. Please create a new account first.', { id: toastId })
+            return
+          }
+          throw new Error(result.error)
+        }
+
+        setAddress(result.address)
+        setBalance(result.balance)
+        setIsConnected(true)
+        setIsNewUser(false)
+
+        // Create or retrieve IOTA Identity for existing user
+        const existingIdentity = iotaIdentity.getUserIdentity(result.address)
+        if (!existingIdentity.success) {
+          const identityResult = await iotaIdentity.createDID(result.address, 'individual')
+          if (identityResult.success) {
+            console.log('🆔 IOTA Identity created for existing wallet:', identityResult.did)
+          }
+        } else {
+          console.log('🆔 IOTA Identity found:', existingIdentity.identity.did)
+        }
+
+        toast.success(`✅ Wallet connected via ${result.provider || 'IOTA'}!`, { id: toastId })
+      }
+
+      // Store connection state
+      localStorage.setItem('wallet_connected', 'true')
+      localStorage.setItem('wallet_address', address)
+      localStorage.setItem('wallet_type', walletType)
+      localStorage.setItem('is_new_user', isNewUser.toString())
+
+    } catch (error) {
+      console.error('Wallet connection failed:', error)
+      toast.error(`Failed to connect wallet: ${error.message}`)
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
+  // 🆕 CREATE NEW ACCOUNT FUNCTION
+  const createNewAccount = async () => {
+    return await connectWallet('new')
+  }
+
+  const disconnectWallet = () => {
+    // Disconnect from IOTA client
+    iotaClient.disconnect()
+
+    setIsConnected(false)
+    setAddress('')
+    setBalance('0')
+    setUserType(null)
+    setIsNewUser(false)
+
+    // Clear stored data
+    localStorage.removeItem('wallet_connected')
+    localStorage.removeItem('wallet_address')
+    localStorage.removeItem('wallet_type')
+    localStorage.removeItem('is_new_user')
+
+    toast.success('🔌 IOTA wallet disconnected')
+  }
+
+  const updateBalance = (newBalance) => {
+    setBalance(newBalance)
+    localStorage.setItem('wallet_balance', newBalance)
+  }
+
+  // 🔗 REAL IOTA TRANSACTION FUNCTION
+  const sendTransaction = async (transactionData) => {
+    if (!isConnected) {
+      throw new Error('Wallet not connected')
+    }
+
+    try {
+      const result = await iotaClient.sendTransaction(
+        transactionData.to || address,
+        transactionData.amount || 0,
+        transactionData
+      )
+
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+
+      // Update balance after transaction (IOTA is feeless!)
+      const newBalance = await iotaClient.getBalance(address)
+      updateBalance(newBalance.toString())
+
+      return {
+        hash: result.transactionId,
+        status: result.status,
+        gasUsed: 0, // IOTA is feeless!
+        blockNumber: result.blockNumber,
+        timestamp: result.timestamp
+      }
+    } catch (error) {
+      console.error('Transaction failed:', error)
+      throw error
+    }
+  }
+
+  // Check for existing connection on mount
+  useEffect(() => {
+    const savedConnection = localStorage.getItem('wallet_connected')
+    const savedAddress = localStorage.getItem('wallet_address')
+    const savedBalance = localStorage.getItem('wallet_balance')
+    
+    if (savedConnection === 'true' && savedAddress && savedBalance) {
+      setIsConnected(true)
+      setAddress(savedAddress)
+      setBalance(savedBalance)
+    }
+  }, [])
+
+  // 🔄 REAL BALANCE MONITORING
+  useEffect(() => {
+    if (!isConnected || !address) return
+
+    const interval = setInterval(async () => {
+      try {
+        const newBalance = await iotaClient.getBalance(address)
+        const balanceStr = newBalance.toString()
+
+        // Only update if balance changed
+        if (balanceStr !== balance) {
+          updateBalance(balanceStr)
+          console.log('💰 Balance updated:', balanceStr, 'IOTA')
+        }
+      } catch (error) {
+        console.error('Failed to update balance:', error)
+      }
+    }, 10000) // Check every 10 seconds
+
+    return () => clearInterval(interval)
+  }, [isConnected, address, balance])
+
+  const value = {
+    // Connection state
+    isConnected,
+    address,
+    balance,
+    isConnecting,
+    network,
+    userType,
+    isNewUser,
+
+    // Connection functions
+    connectWallet,
+    createNewAccount,
+    disconnectWallet,
+    updateBalance,
+    sendTransaction,
+
+    // Utility functions
+    formatAddress: (addr) => addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '',
+    formatBalance: (bal) => parseFloat(bal).toFixed(3),
+
+    // Authentication helpers
+    requireWallet: () => {
+      if (!isConnected) {
+        throw new Error('Wallet connection required')
+      }
+      return true
+    },
+
+    // User identification (blockchain-based)
+    getUserId: () => address, // Wallet address as unique user ID
+  }
+
+  return (
+    <WalletContext.Provider value={value}>
+      {children}
+    </WalletContext.Provider>
+  )
+}

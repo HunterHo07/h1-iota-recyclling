@@ -1,0 +1,17 @@
+[package]
+name = "recycling_marketplace"
+edition = "2024.beta"
+license = "MIT"
+authors = ["IOTA Hackathon Team"]
+
+[dependencies]
+Iota = { git = "https://github.com/iotaledger/iota.git", subdir = "crates/iota-framework/packages/iota-framework", rev = "framework/testnet" }
+
+[addresses]
+recycling_marketplace = "0x0"
+
+[dev-dependencies]
+# Test dependencies can be added here
+
+[dev-addresses]
+# Dev addresses for testing can be added here
