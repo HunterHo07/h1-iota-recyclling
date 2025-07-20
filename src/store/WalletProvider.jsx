@@ -13,6 +13,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { iotaClient } from '@utils/iotaClient'
 import { iotaIdentity } from '@utils/iotaIdentity'
+import { iotaToMYR, formatIOTA, formatMYR, formatDualCurrency } from '@utils/currency'
 
 // 🔗 IOTA Wallet Context - Real blockchain authentication
 const WalletContext = createContext()
@@ -333,6 +334,10 @@ export const WalletProvider = ({ children }) => {
     // Utility functions
     formatAddress: (addr) => addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '',
     formatBalance: (bal) => parseFloat(bal).toFixed(3),
+    formatBalanceWithMYR: (bal) => formatDualCurrency(parseFloat(bal)),
+    getBalanceInMYR: (bal) => iotaToMYR(parseFloat(bal)),
+    formatIOTA,
+    formatMYR,
 
     // Authentication helpers
     requireWallet: () => {

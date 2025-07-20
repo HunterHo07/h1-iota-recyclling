@@ -1,16 +1,17 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { 
-  MapPin, 
-  Clock, 
-  Coins, 
-  Weight, 
-  User, 
+import {
+  MapPin,
+  Clock,
+  Coins,
+  Weight,
+  User,
   CheckCircle,
   AlertCircle,
   Package
 } from 'lucide-react'
 import { useAppState } from '@store/AppStateProvider'
+import { formatDualCurrency } from '@utils/currency'
 
 const JobCard = ({ job, onAction, actionLabel, actionIcon: ActionIcon, showPoster = false }) => {
   const { userRole } = useAppState()
@@ -118,7 +119,11 @@ const JobCard = ({ job, onAction, actionLabel, actionIcon: ActionIcon, showPoste
         
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <Coins className="h-4 w-4 text-accent-500" />
-          <span className="font-semibold text-accent-600">RM {job.reward}</span>
+          <div className="flex flex-col">
+            <span className="font-semibold text-accent-600">
+              {formatDualCurrency(job.reward, false)}
+            </span>
+          </div>
         </div>
         
         <div className="flex items-center space-x-2 text-sm text-gray-600 col-span-2">

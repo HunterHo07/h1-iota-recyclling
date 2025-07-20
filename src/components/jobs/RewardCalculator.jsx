@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Calculator, Info, TrendingUp } from 'lucide-react'
+import { myrToIOTA, formatDualCurrency } from '@utils/currency'
 
 const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
   const [suggestedReward, setSuggestedReward] = useState(0)
@@ -28,13 +29,16 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
       // Platform fee (5% charged to user, collector pays nothing)
       const platformFee = (materialValue + convenienceFee) * 0.05
 
-      const totalReward = Math.max(5, Math.round((materialValue + convenienceFee + platformFee) * 100) / 100)
+      const totalRewardRM = Math.max(5, Math.round((materialValue + convenienceFee + platformFee) * 100) / 100)
 
-      setSuggestedReward(totalReward)
+      // Convert RM to IOTA for blockchain transactions
+      const totalRewardIOTA = myrToIOTA(totalRewardRM)
+
+      setSuggestedReward(totalRewardIOTA)
       setMarketRates(rate)
 
       if (onRewardChange) {
-        onRewardChange(totalReward)
+        onRewardChange(totalRewardIOTA)
       }
     }
   }, [itemType, weight, onRewardChange])
@@ -95,9 +99,14 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
         <div className="bg-white rounded-lg p-3 border border-blue-100">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Suggested Reward</span>
-            <span className="text-lg font-bold text-blue-600">
-              RM {suggestedReward.toFixed(2)}
-            </span>
+            <div className="text-right">
+              <div className="text-lg font-bold text-blue-600">
+                {formatDualCurrency(suggestedReward, false)}
+              </div>
+              <div className="text-xs text-gray-500">
+                {suggestedReward.toFixed(3)} IOTA
+              </div>
+            </div>
           </div>
           <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${levelColors[rewardLevel]}`}>
             <TrendingUp className="h-3 w-3 mr-1" />

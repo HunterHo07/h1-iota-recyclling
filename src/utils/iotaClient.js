@@ -81,16 +81,14 @@ export class RealIOTAClient {
    * Create a new IOTA wallet automatically using real IOTA SDK
    */
   async createNewWallet() {
-    console.log('🚀 Creating new IOTA wallet...')
-
     try {
       // Try to use real IOTA SDK
       const realWallet = await this.createRealIOTAWallet()
       if (realWallet.success) {
         return realWallet
       }
-    } catch (error) {
-      console.warn('⚠️ IOTA SDK not available, using demo wallet:', error.message)
+    } catch (_error) {
+      // Fallback to demo wallet
     }
 
     // Fallback to demo wallet
@@ -410,11 +408,7 @@ export class RealIOTAClient {
       ]
 
       for (const check of providerChecks) {
-        console.log(`🔍 Checking ${check.name}:`, !!check.provider)
-
         if (check.provider) {
-          console.log(`✅ Found ${check.name}! Attempting connection...`)
-
           try {
             // Try to request accounts with multiple methods
             let accounts = []
@@ -422,8 +416,6 @@ export class RealIOTAClient {
 
             // Method 1: Standard request method
             if (provider.request) {
-              console.log(`🔄 Trying request method on ${check.name}`)
-
               const requestMethods = [
                 'iota_requestAccounts',
                 'shimmer_requestAccounts',
@@ -434,14 +426,12 @@ export class RealIOTAClient {
 
               for (const method of requestMethods) {
                 try {
-                  console.log(`  🔄 Trying ${method}...`)
                   accounts = await provider.request({ method })
                   if (accounts && accounts.length > 0) {
-                    console.log(`  ✅ Success with ${method}:`, accounts)
                     break
                   }
-                } catch (methodError) {
-                  console.log(`  ⚠️ ${method} failed:`, methodError.message)
+                } catch (_methodError) {
+                  // Continue to next method
                 }
               }
             }
@@ -478,7 +468,6 @@ export class RealIOTAClient {
 
             if (accounts && accounts.length > 0) {
               const address = accounts[0]
-              console.log(`🎉 Successfully connected to ${check.name}:`, address)
 
               // Get balance
               const balance = await this.getBalance(address)
@@ -505,8 +494,6 @@ export class RealIOTAClient {
                 provider: `generic-${check.name.replace('window.', '')}`,
                 isReal: true
               }
-            } else {
-              console.log(`⚠️ No accounts found for ${check.name}`)
             }
           } catch (providerError) {
             console.log(`❌ ${check.name} connection failed:`, providerError.message)

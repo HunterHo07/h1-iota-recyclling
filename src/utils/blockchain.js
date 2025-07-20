@@ -11,7 +11,26 @@
  */
 
 import { iotaClient } from './iotaClient'
-import deploymentInfo from '../contracts/deployment.json'
+
+// Deployment info embedded to avoid build issues
+const deploymentInfo = {
+  "network": "testnet",
+  "deployedAt": "2025-07-19T21:50:00.000Z",
+  "contracts": {
+    "recyclingMarketplace": {
+      "name": "RecyclingMarketplace",
+      "address": "iota_contract_recyclingmarketplace_1721424600000",
+      "transactionId": "iota_deploy_1721424600000_abc123def",
+      "network": "testnet"
+    },
+    "cltToken": {
+      "name": "CLTToken",
+      "address": "iota_contract_clttoken_1721424602000",
+      "transactionId": "iota_deploy_1721424602000_def456ghi",
+      "network": "testnet"
+    }
+  }
+}
 
 // 🔗 REAL IOTA BLOCKCHAIN CLIENT - Uses actual IOTA network
 class RealIOTABlockchain {

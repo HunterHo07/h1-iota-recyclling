@@ -1,9 +1,11 @@
 /**
  * 💾 SIMPLE DATABASE LAYER
- * 
+ *
  * For hackathon demo, we use localStorage as a simple database
  * In production, this would connect to a real database (MongoDB, PostgreSQL, etc.)
  */
+
+import { myrToIOTA } from './currency.js'
 
 class SimpleDatabase {
   constructor() {
@@ -41,7 +43,7 @@ class SimpleDatabase {
         description: 'Large amount of clean cardboard boxes from office relocation. Easy pickup from ground floor.',
         itemType: 'cardboard',
         weight: 25,
-        reward: 18,
+        reward: myrToIOTA(18), // ~16 IOTA
         location: 'KLCC, Kuala Lumpur',
         status: 'posted',
         poster: 'demo_recycler_1',
@@ -55,7 +57,7 @@ class SimpleDatabase {
         description: 'Clean plastic bottles from restaurant. Available for pickup after 6 PM.',
         itemType: 'plastic',
         weight: 12,
-        reward: 8,
+        reward: myrToIOTA(8), // ~7 IOTA
         location: 'Mont Kiara, KL',
         status: 'posted',
         poster: 'demo_recycler_2',
@@ -69,7 +71,7 @@ class SimpleDatabase {
         description: 'Old laptops, phones, and cables. Proper e-waste disposal needed.',
         itemType: 'electronics',
         weight: 8,
-        reward: 35,
+        reward: myrToIOTA(35), // ~31 IOTA
         location: 'Bangsar, KL',
         status: 'posted',
         poster: 'demo_recycler_3',
@@ -83,7 +85,7 @@ class SimpleDatabase {
         description: 'Wine and beer bottles from event. Clean and sorted.',
         itemType: 'glass',
         weight: 30,
-        reward: 22,
+        reward: myrToIOTA(22), // ~19.5 IOTA
         location: 'Petaling Jaya, Malaysia',
         status: 'posted',
         poster: 'demo_recycler_4',
@@ -97,7 +99,7 @@ class SimpleDatabase {
         description: 'Aluminum cans from busy cafe. Daily collection available.',
         itemType: 'metal',
         weight: 15,
-        reward: 12,
+        reward: myrToIOTA(12), // ~10.5 IOTA
         location: 'Subang Jaya',
         status: 'posted',
         poster: 'demo_recycler_5',
@@ -111,7 +113,7 @@ class SimpleDatabase {
         description: 'Clean paper waste from school office. Large quantity available.',
         itemType: 'paper',
         weight: 40,
-        reward: 28,
+        reward: myrToIOTA(28), // ~25 IOTA
         location: 'Shah Alam',
         status: 'posted',
         poster: 'demo_recycler_6',

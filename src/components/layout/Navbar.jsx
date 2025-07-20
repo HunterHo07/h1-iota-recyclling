@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Recycle,
@@ -27,10 +27,12 @@ const Navbar = () => {
     disconnectWallet,
     formatAddress,
     formatBalance,
+    formatBalanceWithMYR,
     isConnecting
   } = useWallet()
   const { userRole, setUserRole, jobs } = useAppState()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isLandingPage = location.pathname === '/'
 
@@ -42,7 +44,22 @@ const Navbar = () => {
   const toggleRole = () => {
     const newRole = userRole === 'recycler' ? 'collector' : 'recycler'
     setUserRole(newRole)
+
+    // Navigate to the appropriate dashboard when role changes
+    if (!isLandingPage) {
+      navigate(newRole === 'recycler' ? '/recycler' : '/collector')
+    }
   }
+
+  // Auto-navigate when role changes and user is on a dashboard
+  useEffect(() => {
+    if (!isLandingPage && (location.pathname === '/recycler' || location.pathname === '/collector')) {
+      const expectedPath = userRole === 'recycler' ? '/recycler' : '/collector'
+      if (location.pathname !== expectedPath) {
+        navigate(expectedPath)
+      }
+    }
+  }, [userRole, location.pathname, isLandingPage, navigate])
 
   const navItems = [
     { 
@@ -139,9 +156,14 @@ const Navbar = () => {
                 {/* Balance Display */}
                 <div className="flex items-center space-x-2 bg-accent-50 px-3 py-2 rounded-lg">
                   <Coins className="h-4 w-4 text-accent-600" />
-                  <span className="text-sm font-semibold text-accent-700">
-                    {formatBalance(balance)} IOTA
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-accent-700">
+                      {formatBalance(balance)} IOTA
+                    </span>
+                    <span className="text-xs text-accent-600">
+                      {formatBalanceWithMYR(balance)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Wallet Address */}
