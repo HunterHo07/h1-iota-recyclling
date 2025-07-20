@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { toast } from 'react-hot-toast'
 import {
   Wallet,
   Search,
@@ -8,10 +9,16 @@ import {
   AlertCircle,
   RefreshCw,
   Eye,
-  Plus
+  Plus,
+  Copy,
+  Trash2
 } from 'lucide-react'
 import { useWallet } from '@store/WalletProvider'
 import { iotaClient } from '@utils/iotaClient'
+import TransactionHistory from '@components/blockchain/TransactionHistory'
+import ContractInfo from '@components/blockchain/ContractInfo'
+import TransactionTester from '@components/test/TransactionTester'
+import QuickCopyPanel from '@components/wallet/QuickCopyPanel'
 
 const WalletDebug = () => {
   const { isConnected, address, balance, connectWallet, isConnecting } = useWallet()
@@ -22,6 +29,11 @@ const WalletDebug = () => {
   const addLog = (message, type = 'info') => {
     const timestamp = new Date().toLocaleTimeString()
     setLogs(prev => [...prev, { message, type, timestamp }])
+  }
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text)
+    toast.success(`${label} copied to clipboard!`)
   }
 
   const detectWallets = async () => {
@@ -209,15 +221,53 @@ const WalletDebug = () => {
               </div>
               {address && (
                 <div className="text-sm">
-                  <span className="font-medium">Address:</span> {address.slice(0, 10)}...{address.slice(-6)}
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-gray-700">Address:</span>
+                    <div className="flex items-center space-x-2 flex-1">
+                      <span className="font-mono text-sm bg-gray-100 text-gray-800 px-2 py-1 rounded border">
+                        {address.slice(0, 20)}...{address.slice(-10)}
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(address, 'Wallet address')}
+                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        title="Copy full wallet address"
+                      >
+                        <Copy className="h-4 w-4 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
               {balance && (
                 <div className="text-sm">
-                  <span className="font-medium">Balance:</span> {balance} IOTA
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-gray-700">Balance:</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono text-sm bg-green-100 text-green-800 px-2 py-1 rounded border">
+                        {balance} IOTA
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(balance, 'Balance amount')}
+                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        title="Copy balance"
+                      >
+                        <Copy className="h-4 w-4 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Quick Copy Panel */}
+          <div className="mb-6">
+            <QuickCopyPanel />
+          </div>
+
+          {/* Transaction Tester */}
+          <div className="mb-6">
+            <TransactionTester />
           </div>
 
           {/* Wallet Detection Results */}
@@ -266,10 +316,21 @@ const WalletDebug = () => {
             </div>
 
             {detectionResults.windowObjects?.length > 0 && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-medium text-blue-900 mb-2">Found Window Objects:</h3>
-                <div className="text-sm text-blue-700">
-                  {detectionResults.windowObjects.join(', ')}
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium text-blue-900">Found Window Objects:</h3>
+                  <button
+                    onClick={() => copyToClipboard(detectionResults.windowObjects.join(', '), 'Window objects')}
+                    className="p-1 hover:bg-blue-200 rounded transition-colors"
+                    title="Copy window objects"
+                  >
+                    <Copy className="h-4 w-4 text-blue-600" />
+                  </button>
+                </div>
+                <div className="bg-white border border-blue-200 rounded p-3">
+                  <code className="text-sm text-gray-800 font-mono break-all">
+                    {detectionResults.windowObjects.join(', ')}
+                  </code>
                 </div>
               </div>
             )}
@@ -380,12 +441,32 @@ const WalletDebug = () => {
 
           {/* Debug Logs */}
           <div>
-            <h2 className="text-lg font-semibold mb-4">Debug Logs</h2>
-            <div className="bg-gray-900 text-green-400 p-4 rounded-lg h-64 overflow-y-auto font-mono text-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Debug Logs</h2>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => copyToClipboard(logs.map(log => `[${log.timestamp}] ${log.message}`).join('\n'), 'Debug logs')}
+                  className="flex items-center space-x-1 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                  title="Copy all logs"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span className="text-sm">Copy Logs</span>
+                </button>
+                <button
+                  onClick={() => setLogs([])}
+                  className="flex items-center space-x-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                  title="Clear logs"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="text-sm">Clear</span>
+                </button>
+              </div>
+            </div>
+            <div className="bg-gray-900 border border-gray-700 text-green-400 p-4 rounded-lg h-64 overflow-y-auto font-mono text-sm">
               {logs.map((log, index) => (
                 <div key={index} className={`mb-1 ${
-                  log.type === 'error' ? 'text-red-400' : 
-                  log.type === 'warning' ? 'text-yellow-400' : 
+                  log.type === 'error' ? 'text-red-400' :
+                  log.type === 'warning' ? 'text-yellow-400' :
                   log.type === 'success' ? 'text-green-400' : 'text-gray-300'
                 }`}>
                   <span className="text-gray-500">[{log.timestamp}]</span> {log.message}

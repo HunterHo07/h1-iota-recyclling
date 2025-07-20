@@ -29,6 +29,22 @@ const TransactionPopup = ({
 
   const { sendTransaction, updateBalance } = useWallet()
 
+  // Handle countdown during processing
+  useEffect(() => {
+    if (step === 'processing') {
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            return 0
+          }
+          return prev - 1
+        })
+      }, 100) // Fast countdown for demo
+
+      return () => clearInterval(timer)
+    }
+  }, [step])
+
   const getTransactionTitle = () => {
     switch (transaction?.method) {
       case 'postJob': return 'Post Recycling Job'
@@ -57,6 +73,7 @@ const TransactionPopup = ({
   const handleConfirm = async () => {
     setStep('processing')
     setError('')
+    setCountdown(30)
 
     try {
       // Prepare transaction data based on method

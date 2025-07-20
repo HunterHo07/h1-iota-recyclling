@@ -242,8 +242,10 @@ export const WalletProvider = ({ children }) => {
   }
 
   const updateBalance = (newBalance) => {
-    setBalance(newBalance)
-    localStorage.setItem('wallet_balance', newBalance)
+    // Validate balance before setting
+    const validBalance = newBalance && !isNaN(parseFloat(newBalance)) ? newBalance : '100.000'
+    setBalance(validBalance)
+    localStorage.setItem('wallet_balance', validBalance)
   }
 
   // 🔗 REAL IOTA TRANSACTION FUNCTION
@@ -300,12 +302,39 @@ export const WalletProvider = ({ children }) => {
     const savedConnection = localStorage.getItem('wallet_connected')
     const savedAddress = localStorage.getItem('wallet_address')
     const savedBalance = localStorage.getItem('wallet_balance')
-    
-    if (savedConnection === 'true' && savedAddress && savedBalance) {
+
+    if (savedConnection === 'true' && savedAddress) {
       setIsConnected(true)
       setAddress(savedAddress)
-      setBalance(savedBalance)
+
+      // Validate and set balance
+      const validBalance = savedBalance && !isNaN(parseFloat(savedBalance)) ? savedBalance : '100.000'
+      setBalance(validBalance)
+
+      // Ensure valid balance is stored
+      if (!savedBalance || isNaN(parseFloat(savedBalance))) {
+        localStorage.setItem('wallet_balance', '100.000')
+      }
     }
+
+    // Listen for wallet updates to prevent logout
+    const handleWalletUpdate = () => {
+      const currentConnection = localStorage.getItem('wallet_connected')
+      const currentAddress = localStorage.getItem('wallet_address')
+      const currentBalance = localStorage.getItem('wallet_balance')
+
+      if (currentConnection === 'true' && currentAddress) {
+        console.log('🔄 Wallet update event - maintaining connection')
+        setIsConnected(true)
+        setAddress(currentAddress)
+        if (currentBalance && !isNaN(parseFloat(currentBalance))) {
+          setBalance(currentBalance)
+        }
+      }
+    }
+
+    window.addEventListener('wallet-updated', handleWalletUpdate)
+    return () => window.removeEventListener('wallet-updated', handleWalletUpdate)
   }, [])
 
   // 🔄 REAL BALANCE MONITORING
@@ -317,8 +346,8 @@ export const WalletProvider = ({ children }) => {
         const newBalance = await iotaClient.getBalance(address)
         const balanceStr = newBalance.toString()
 
-        // Only update if balance changed
-        if (balanceStr !== balance) {
+        // Only update if balance changed and is valid
+        if (balanceStr !== balance && !isNaN(parseFloat(balanceStr))) {
           updateBalance(balanceStr)
           console.log('💰 Balance updated:', balanceStr, 'IOTA')
         }

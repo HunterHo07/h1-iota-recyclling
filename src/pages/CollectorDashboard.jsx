@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-hot-toast'
 import {
@@ -32,12 +32,36 @@ const CollectorDashboard = () => {
   const { jobs, claimJob, completeJob, userProfile } = useAppState()
   const { isConnected, balance, formatBalanceWithMYR, address } = useWallet()
 
+  // Monitor for newly claimed jobs and auto-switch to "My Jobs" tab
+  useEffect(() => {
+    const claimedJobs = jobs.filter(job => job.status === 'claimed' && job.collector === address)
+    console.log('🔍 Monitoring claimed jobs:', claimedJobs.length)
+
+    if (claimedJobs.length > 0 && activeTab === 'available') {
+      console.log('🎯 Found claimed job, switching to My Jobs tab')
+      setTimeout(() => {
+        setActiveTab('claimed')
+      }, 1000)
+    }
+  }, [jobs, address, activeTab])
+
   // Filter and sort jobs
   const filteredJobs = jobs
     .filter(job => {
       const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            job.location.toLowerCase().includes(searchQuery.toLowerCase())
-      
+
+      // Debug logging for claimed jobs
+      if (activeTab === 'claimed') {
+        console.log('🔍 Checking job for claimed tab:', {
+          jobId: job.id,
+          status: job.status,
+          collector: job.collector,
+          currentAddress: address,
+          matches: job.status === 'claimed' && job.collector === address
+        })
+      }
+
       switch (activeTab) {
         case 'available':
           return job.status === 'posted' && matchesSearch
@@ -127,7 +151,7 @@ const CollectorDashboard = () => {
           // Auto-switch to "My Jobs" tab to show claimed job
           setTimeout(() => {
             setActiveTab('claimed')
-          }, 3000)
+          }, 6000) // Wait for blockchain confirmation
         } catch (error) {
           toast.error(error.message || 'Failed to claim job')
         }

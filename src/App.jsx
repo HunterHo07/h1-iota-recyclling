@@ -57,10 +57,8 @@ function App() {
   return (
     <WalletProvider>
       <AppStateProvider>
+        <RouteRecovery />
         <div className="min-h-screen bg-gray-50 flex flex-col">
-          {/* Route Recovery */}
-          <RouteRecovery />
-
           {/* Navigation */}
           <Navbar />
 
