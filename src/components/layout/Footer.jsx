@@ -49,7 +49,7 @@ const Footer = () => {
               <div className="p-2 bg-primary-600 rounded-xl">
                 <Recycle className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold">IOTA Recycling</span>
+              <span className="text-xl font-bold">Grab Recycle</span>
             </div>
             <p className="text-gray-400 mb-6 max-w-md">
               Making recycling pickup as easy as ordering food delivery. 
@@ -157,7 +157,7 @@ const Footer = () => {
         <div className="py-6 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2 text-sm text-gray-400">
-              <span>© {currentYear} IOTA Recycling MVP.</span>
+              <span>© {currentYear} Grab Recycle.</span>
               <span>Made with</span>
               <Heart className="h-4 w-4 text-red-500" />
               <span>for the environment.</span>

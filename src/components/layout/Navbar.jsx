@@ -67,7 +67,7 @@ const Navbar = () => {
               <Recycle className="h-6 w-6 text-primary-600" />
             </div>
             <span className="text-xl font-bold text-gray-900 hidden sm:block">
-              IOTA Recycling
+              Grab Recycle
             </span>
           </Link>
 
@@ -178,6 +178,7 @@ const Navbar = () => {
                   <Plus className="h-4 w-4 mr-2" />
                   New Account
                 </button>
+
               </div>
             )}
           </div>
@@ -281,7 +282,10 @@ const Navbar = () => {
               ) : (
                 <div className="space-y-2">
                   <button
-                    onClick={() => connectWallet('existing')}
+                    onClick={() => {
+                      connectWallet('existing')
+                      setIsMobileMenuOpen(false)
+                    }}
                     disabled={isConnecting}
                     className="w-full btn-primary text-sm py-3 disabled:opacity-50"
                   >
@@ -289,7 +293,10 @@ const Navbar = () => {
                     {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                   </button>
                   <button
-                    onClick={createNewAccount}
+                    onClick={() => {
+                      createNewAccount()
+                      setIsMobileMenuOpen(false)
+                    }}
                     disabled={isConnecting}
                     className="w-full btn-secondary text-sm py-3 disabled:opacity-50"
                   >

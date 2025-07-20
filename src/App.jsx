@@ -9,6 +9,7 @@ import RecyclerDashboard from '@pages/RecyclerDashboard'
 import CollectorDashboard from '@pages/CollectorDashboard'
 import JobDetails from '@pages/JobDetails'
 import Profile from '@pages/Profile'
+import WalletDebug from '@pages/WalletDebug'
 import NotFound from '@pages/NotFound'
 
 // Import providers
@@ -109,8 +110,21 @@ function App() {
                     </WalletGuard>
                   }
                 />
-                <Route 
-                  path="*" 
+                <Route
+                  path="/debug"
+                  element={
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <WalletDebug />
+                    </motion.div>
+                  }
+                />
+                <Route
+                  path="*"
                   element={
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -120,7 +134,7 @@ function App() {
                     >
                       <NotFound />
                     </motion.div>
-                  } 
+                  }
                 />
               </Routes>
             </AnimatePresence>

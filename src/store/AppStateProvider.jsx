@@ -166,64 +166,126 @@ export const AppStateProvider = ({ children }) => {
 
   const completeJob = async (jobId, proofData) => {
     dispatch({ type: ACTIONS.SET_LOADING, payload: true })
-    
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
+      const job = state.jobs.find(j => j.id === jobId)
+      if (!job) {
+        throw new Error('Job not found')
+      }
+
+      // Step 1: Mark job as completed
       const updatedJob = {
         id: jobId,
         status: 'completed',
         completedAt: new Date().toISOString(),
         completionProof: proofData,
       }
-      
+
       dispatch({ type: ACTIONS.UPDATE_JOB, payload: updatedJob })
-      
-      // Update stats
-      dispatch({ 
-        type: ACTIONS.SET_STATS, 
-        payload: { completedToday: state.stats.completedToday + 1 } 
-      })
-      
-      toast.success('Job completed successfully!')
-      
+      toast.success('Job marked as completed!')
+
+      // Step 2: Automatically process payment
+      await processJobPayment(jobId, job)
+
     } catch (error) {
-      toast.error('Failed to complete job')
+      toast.error('Failed to complete job: ' + error.message)
       dispatch({ type: ACTIONS.SET_ERROR, payload: error.message })
     } finally {
       dispatch({ type: ACTIONS.SET_LOADING, payload: false })
     }
   }
 
-  const releasePayment = async (jobId) => {
-    dispatch({ type: ACTIONS.SET_LOADING, payload: true })
-    
+  const processJobPayment = async (jobId, job) => {
     try {
-      // Simulate blockchain transaction
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      
-      const job = state.jobs.find(j => j.id === jobId)
-      if (job) {
-        const updatedJob = {
+      // Import IOTA client for payment processing
+      const { iotaClient } = await import('../utils/iotaClient')
+
+      // Check if wallet is connected
+      if (!iotaClient.currentWallet) {
+        toast.error('Wallet not connected. Please connect your wallet to receive payment.')
+        return
+      }
+
+      toast.loading('Processing payment via IOTA blockchain...', { duration: 3000 })
+
+      // Create payment transaction
+      const paymentResult = await iotaClient.sendTransaction(
+        iotaClient.currentWallet.address, // Pay to collector's wallet
+        job.reward, // Amount in IOTA
+        {
+          jobId: jobId,
+          type: 'job_completion_payment',
+          description: `Payment for: ${job.title}`,
+          timestamp: new Date().toISOString()
+        }
+      )
+
+      if (paymentResult.success) {
+        // Update job status to paid
+        const paidJob = {
           id: jobId,
           status: 'paid',
           paidAt: new Date().toISOString(),
+          transactionId: paymentResult.transactionId,
+          transactionHash: paymentResult.hash
         }
-        
-        dispatch({ type: ACTIONS.UPDATE_JOB, payload: updatedJob })
-        
+
+        dispatch({ type: ACTIONS.UPDATE_JOB, payload: paidJob })
+
         // Update user earnings
         dispatch({
           type: ACTIONS.SET_USER_PROFILE,
           payload: { totalEarned: state.userProfile.totalEarned + job.reward }
         })
-        
-        toast.success('Payment released successfully!')
+
+        // Update stats
+        dispatch({
+          type: ACTIONS.SET_STATS,
+          payload: { completedToday: state.stats.completedToday + 1 }
+        })
+
+        // Show success message with transaction details
+        toast.success(
+          <div>
+            <div className="font-semibold">💰 Payment Sent!</div>
+            <div className="text-sm">Amount: {job.reward} IOTA</div>
+            <div className="text-xs text-gray-600">TX: {paymentResult.transactionId?.slice(0, 10)}...</div>
+          </div>,
+          { duration: 5000 }
+        )
+      } else {
+        throw new Error(paymentResult.error || 'Payment transaction failed')
       }
-      
+
     } catch (error) {
-      toast.error('Failed to release payment')
+      toast.error('Payment failed: ' + error.message)
+
+      // Mark job as completed but payment pending
+      const pendingPaymentJob = {
+        id: jobId,
+        status: 'payment_pending',
+        paymentError: error.message,
+        updatedAt: new Date().toISOString()
+      }
+
+      dispatch({ type: ACTIONS.UPDATE_JOB, payload: pendingPaymentJob })
+    }
+  }
+
+  const releasePayment = async (jobId) => {
+    dispatch({ type: ACTIONS.SET_LOADING, payload: true })
+
+    try {
+      const job = state.jobs.find(j => j.id === jobId)
+      if (!job) {
+        throw new Error('Job not found')
+      }
+
+      // Process manual payment release
+      await processJobPayment(jobId, job)
+
+    } catch (error) {
+      toast.error('Failed to release payment: ' + error.message)
       dispatch({ type: ACTIONS.SET_ERROR, payload: error.message })
     } finally {
       dispatch({ type: ACTIONS.SET_LOADING, payload: false })
@@ -250,62 +312,7 @@ export const AppStateProvider = ({ children }) => {
         const stats = await database.getStats()
         dispatch({ type: ACTIONS.SET_STATS, payload: stats })
 
-        // If no jobs exist, create some demo data
-        if (jobs.length === 0) {
-          const demoJobs = [
-            {
-              title: 'Cardboard boxes pickup',
-              description: '5kg of cardboard boxes from office move',
-              itemType: 'cardboard',
-              weight: 5,
-              location: 'KLCC, Kuala Lumpur',
-              fullAddress: '50 Jalan Ampang, KLCC, 50450 Kuala Lumpur',
-              contactInfo: {
-                name: 'Sarah Chen',
-                phone: '+60 12-345-6789',
-                email: 'sarah.chen@company.com'
-              },
-              pickupPreferences: {
-                timeSlots: ['9:00 AM - 12:00 PM', '2:00 PM - 5:00 PM'],
-                preferredDays: ['Monday', 'Tuesday', 'Wednesday'],
-                specialInstructions: 'Please call 30 minutes before arrival. Use service elevator on Level B1.'
-              },
-              photoUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400',
-              reward: 15,
-              poster: 'demo_user_1',
-            },
-            {
-              title: 'Plastic bottles collection',
-              description: '20 plastic bottles from event cleanup',
-              itemType: 'plastic',
-              weight: 2,
-              location: 'Petaling Jaya, Malaysia',
-              fullAddress: '123 Jalan SS2/24, SS2, 47300 Petaling Jaya, Selangor',
-              contactInfo: {
-                name: 'Ahmad Rahman',
-                phone: '+60 17-888-9999',
-                email: 'ahmad.rahman@gmail.com'
-              },
-              pickupPreferences: {
-                timeSlots: ['10:00 AM - 1:00 PM', '3:00 PM - 6:00 PM'],
-                preferredDays: ['Tuesday', 'Thursday', 'Saturday'],
-                specialInstructions: 'Items are in the parking garage. Please text when you arrive.'
-              },
-              photoUrl: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=400&h=300&fit=crop&auto=format',
-              reward: 8,
-              poster: 'demo_user_2',
-            },
-          ]
-
-          // Create demo jobs in database
-          for (const jobData of demoJobs) {
-            await database.createJob(jobData)
-          }
-
-          // Reload jobs after creating demo data
-          const updatedJobs = await database.getJobs()
-          dispatch({ type: ACTIONS.SET_JOBS, payload: updatedJobs })
-        }
+        // Demo jobs are now automatically loaded from database initialization
       } catch (error) {
         console.error('Failed to initialize data:', error)
       }

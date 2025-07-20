@@ -1,8 +1,8 @@
 {
-  "name": "iota-recycling-mvp",
+  "name": "grab-recycle",
   "version": "1.0.0",
   "type": "module",
-  "description": "IOTA Recycling MVP - Turn Your Trash Into Cash",
+  "description": "Grab Recycle - Turn Your Trash Into Cash",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "echo 'E2E tests would run here'",
+    "test:wallet": "node scripts/test-real-wallet.js",
     "lint": "eslint . --ext js,jsx,ts,tsx",
     "format": "prettier --write .",
     "contract:build": "echo 'Smart contracts ready for deployment'",

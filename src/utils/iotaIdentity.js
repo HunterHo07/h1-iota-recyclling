@@ -66,7 +66,7 @@ export class IOTAIdentityManager {
         created: Date.now()
       })
 
-      console.log('🆔 DID created:', didId)
+
       
       return {
         success: true,
@@ -74,7 +74,7 @@ export class IOTAIdentityManager {
         document: didDocument
       }
     } catch (error) {
-      console.error('❌ Failed to create DID:', error)
+
       return {
         success: false,
         error: error.message
@@ -128,7 +128,7 @@ export class IOTAIdentityManager {
       subjectIdentity.credentials.push(credentialId)
       subjectIdentity.reputation.verifiedCredentials++
 
-      console.log('📜 Verifiable credential issued:', credentialId)
+
 
       return {
         success: true,
@@ -136,7 +136,7 @@ export class IOTAIdentityManager {
         credential: verifiableCredential
       }
     } catch (error) {
-      console.error('❌ Failed to issue credential:', error)
+
       return {
         success: false,
         error: error.message
@@ -182,7 +182,7 @@ export class IOTAIdentityManager {
         verification: verificationResult
       }
     } catch (error) {
-      console.error('❌ Failed to verify credential:', error)
+
       return {
         success: false,
         error: error.message

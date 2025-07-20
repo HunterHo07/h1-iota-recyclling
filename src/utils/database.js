@@ -7,14 +7,14 @@
 
 class SimpleDatabase {
   constructor() {
-    this.prefix = 'iota_recycling_'
+    this.prefix = 'grab_recycle_'
     this.initialize()
   }
 
   initialize() {
     // Initialize default data if not exists
     if (!this.get('jobs')) {
-      this.set('jobs', [])
+      this.set('jobs', this.getDemoJobs())
     }
     if (!this.get('users')) {
       this.set('users', {})
@@ -24,12 +24,102 @@ class SimpleDatabase {
     }
     if (!this.get('stats')) {
       this.set('stats', {
-        totalJobs: 0,
-        completedJobs: 0,
-        totalRewards: 0,
-        activeUsers: 0
+        totalJobs: 8,
+        completedJobs: 3,
+        totalRewards: 156,
+        activeUsers: 12
       })
     }
+  }
+
+  // Demo data for development/testing
+  getDemoJobs() {
+    return [
+      {
+        id: 'demo_1',
+        title: 'Office Cardboard Collection',
+        description: 'Large amount of clean cardboard boxes from office relocation. Easy pickup from ground floor.',
+        itemType: 'cardboard',
+        weight: 25,
+        reward: 18,
+        location: 'KLCC, Kuala Lumpur',
+        status: 'posted',
+        poster: 'demo_recycler_1',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        urgency: 'medium',
+        images: []
+      },
+      {
+        id: 'demo_2',
+        title: 'Plastic Bottles - Restaurant',
+        description: 'Clean plastic bottles from restaurant. Available for pickup after 6 PM.',
+        itemType: 'plastic',
+        weight: 12,
+        reward: 8,
+        location: 'Mont Kiara, KL',
+        status: 'posted',
+        poster: 'demo_recycler_2',
+        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+        urgency: 'low',
+        images: []
+      },
+      {
+        id: 'demo_3',
+        title: 'Electronics Recycling',
+        description: 'Old laptops, phones, and cables. Proper e-waste disposal needed.',
+        itemType: 'electronics',
+        weight: 8,
+        reward: 35,
+        location: 'Bangsar, KL',
+        status: 'posted',
+        poster: 'demo_recycler_3',
+        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
+        urgency: 'high',
+        images: []
+      },
+      {
+        id: 'demo_4',
+        title: 'Glass Bottles Collection',
+        description: 'Wine and beer bottles from event. Clean and sorted.',
+        itemType: 'glass',
+        weight: 30,
+        reward: 22,
+        location: 'Petaling Jaya, Malaysia',
+        status: 'posted',
+        poster: 'demo_recycler_4',
+        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+        urgency: 'medium',
+        images: []
+      },
+      {
+        id: 'demo_5',
+        title: 'Metal Cans - Cafe',
+        description: 'Aluminum cans from busy cafe. Daily collection available.',
+        itemType: 'metal',
+        weight: 15,
+        reward: 12,
+        location: 'Subang Jaya',
+        status: 'posted',
+        poster: 'demo_recycler_5',
+        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+        urgency: 'low',
+        images: []
+      },
+      {
+        id: 'demo_6',
+        title: 'Paper Waste - School',
+        description: 'Clean paper waste from school office. Large quantity available.',
+        itemType: 'paper',
+        weight: 40,
+        reward: 28,
+        location: 'Shah Alam',
+        status: 'posted',
+        poster: 'demo_recycler_6',
+        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
+        urgency: 'medium',
+        images: []
+      }
+    ]
   }
 
   // Generic storage methods

@@ -241,13 +241,23 @@ const CollectorDashboard = () => {
           })}
         </div>
 
-        {/* Job Map */}
-        <div className="mb-8">
+        {/* Interactive Job Map */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8"
+        >
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">📍 Interactive Job Map</h2>
+            <p className="text-gray-600">Click on any marker to view job details and claim opportunities near you.</p>
+          </div>
           <JobMap
             jobs={filteredJobs.filter(job => job.status === 'posted')}
             onJobSelect={(job) => handleJobAction(job)}
+            userLocation={{ lat: 3.1390, lng: 101.6869 }} // Mock user location in KL
           />
-        </div>
+        </motion.div>
 
         {/* Search and Filter */}
         <div className="mb-6">

@@ -21,7 +21,7 @@ import { useWallet } from '@store/WalletProvider'
 import { toast } from 'react-hot-toast'
 
 const WalletGuard = ({ children, requireWallet = true }) => {
-  const { isConnected, isConnecting, connectWallet, createNewAccount } = useWallet()
+  const { isConnected, isConnecting } = useWallet()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -94,35 +94,23 @@ const WalletGuard = ({ children, requireWallet = true }) => {
 
         {/* Connection Options */}
         <div className="space-y-4">
-          {/* Connect Existing Wallet */}
+          {/* Go to Wallet Options */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => connectWallet('existing')}
-            disabled={isConnecting}
-            className="w-full bg-primary-600 text-white py-4 px-6 rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center space-x-3 disabled:opacity-50"
+            onClick={() => navigate('/debug')}
+            className="w-full bg-primary-600 text-white py-4 px-6 rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center space-x-3"
           >
             <Wallet className="h-5 w-5" />
-            <span>
-              {isConnecting ? 'Connecting...' : 'Connect Existing Wallet'}
-            </span>
-            {!isConnecting && <ArrowRight className="h-5 w-5" />}
+            <span>Choose Wallet Connection</span>
+            <ArrowRight className="h-5 w-5" />
           </motion.button>
 
-          {/* Create New Account */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => createNewAccount()}
-            disabled={isConnecting}
-            className="w-full bg-green-600 text-white py-4 px-6 rounded-xl font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-3 disabled:opacity-50"
-          >
-            <Plus className="h-5 w-5" />
-            <span>
-              {isConnecting ? 'Creating Account...' : 'Create New IOTA Account'}
-            </span>
-            {!isConnecting && <ArrowRight className="h-5 w-5" />}
-          </motion.button>
+          {/* Quick Info */}
+          <div className="text-center text-sm text-gray-600 bg-blue-50 p-4 rounded-lg">
+            <div className="font-medium text-blue-800 mb-2">🔗 Multiple Wallet Options Available</div>
+            <div>Connect with Firefly, MetaMask Snap, or create a new IOTA wallet</div>
+          </div>
 
           {/* Download Wallet Link */}
           <div className="text-center pt-4 border-t border-gray-200">

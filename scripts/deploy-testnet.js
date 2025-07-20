@@ -122,7 +122,7 @@ class TestnetDeployer {
       VITE_IOTA_NETWORK: 'testnet',
       VITE_IOTA_RPC_URL: DEPLOYMENT_CONFIG.contracts.rpcUrl,
       VITE_IOTA_EXPLORER_URL: DEPLOYMENT_CONFIG.contracts.explorerUrl,
-      VITE_APP_TITLE: 'IOTA Recycling MVP - Testnet',
+      VITE_APP_TITLE: 'Grab Recycle - Testnet',
       VITE_APP_DESCRIPTION: 'Turn Your Trash Into Cash - IOTA Testnet Demo'
     }
     

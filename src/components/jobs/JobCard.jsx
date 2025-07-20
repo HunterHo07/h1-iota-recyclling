@@ -20,6 +20,7 @@ const JobCard = ({ job, onAction, actionLabel, actionIcon: ActionIcon, showPoste
       case 'posted': return 'bg-blue-100 text-blue-800'
       case 'claimed': return 'bg-yellow-100 text-yellow-800'
       case 'completed': return 'bg-green-100 text-green-800'
+      case 'payment_pending': return 'bg-orange-100 text-orange-800'
       case 'paid': return 'bg-purple-100 text-purple-800'
       default: return 'bg-gray-100 text-gray-800'
     }
@@ -30,6 +31,7 @@ const JobCard = ({ job, onAction, actionLabel, actionIcon: ActionIcon, showPoste
       case 'posted': return <Package className="h-4 w-4" />
       case 'claimed': return <Clock className="h-4 w-4" />
       case 'completed': return <CheckCircle className="h-4 w-4" />
+      case 'payment_pending': return <AlertCircle className="h-4 w-4" />
       case 'paid': return <Coins className="h-4 w-4" />
       default: return <AlertCircle className="h-4 w-4" />
     }
@@ -146,22 +148,53 @@ const JobCard = ({ job, onAction, actionLabel, actionIcon: ActionIcon, showPoste
       </div>
 
       {/* Progress Indicator for claimed/completed jobs */}
-      {(job.status === 'claimed' || job.status === 'completed') && (
+      {(job.status === 'claimed' || job.status === 'completed' || job.status === 'payment_pending') && (
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
             <span>Progress</span>
             <span>
-              {job.status === 'claimed' ? '50%' : job.status === 'completed' ? '75%' : '100%'}
+              {job.status === 'claimed' ? '50%' :
+               job.status === 'completed' ? '75%' :
+               job.status === 'payment_pending' ? '90%' : '100%'}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+            <div
               className={`h-2 rounded-full transition-all duration-500 ${
-                job.status === 'claimed' ? 'bg-yellow-500 w-1/2' : 
-                job.status === 'completed' ? 'bg-green-500 w-3/4' : 
+                job.status === 'claimed' ? 'bg-yellow-500 w-1/2' :
+                job.status === 'completed' ? 'bg-green-500 w-3/4' :
+                job.status === 'payment_pending' ? 'bg-orange-500 w-11/12' :
                 'bg-purple-500 w-full'
               }`}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Payment Details for paid jobs */}
+      {job.status === 'paid' && job.transactionId && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-500">Transaction ID:</span>
+            <span className="font-mono text-purple-600">
+              {job.transactionId.slice(0, 8)}...{job.transactionId.slice(-6)}
+            </span>
+          </div>
+          {job.paidAt && (
+            <div className="flex items-center justify-between text-xs mt-1">
+              <span className="text-gray-500">Paid:</span>
+              <span className="text-green-600">{formatTimeAgo(job.paidAt)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Payment Error for payment_pending jobs */}
+      {job.status === 'payment_pending' && job.paymentError && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+            <div className="font-medium">Payment Pending</div>
+            <div className="mt-1">{job.paymentError}</div>
           </div>
         </div>
       )}

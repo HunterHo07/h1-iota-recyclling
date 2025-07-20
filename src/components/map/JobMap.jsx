@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, Navigation, Zap, Package } from 'lucide-react'
+import { MapPin, Navigation, Zap, Package, RefreshCw } from 'lucide-react'
 
 const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
   const [selectedJob, setSelectedJob] = useState(null)
@@ -55,43 +55,94 @@ const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      {/* Map Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white p-4">
+      {/* Enhanced Map Header */}
+      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-secondary-600 text-white p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <MapPin className="h-5 w-5" />
-            <h3 className="font-semibold">Jobs Near You</h3>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+              <MapPin className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Jobs Near You</h3>
+              <p className="text-sm text-blue-100">Real-time recycling opportunities</p>
+            </div>
           </div>
-          <div className="flex items-center space-x-2 text-sm">
-            <Navigation className="h-4 w-4" />
-            <span>{jobs.length} jobs available</span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
+              <Navigation className="h-4 w-4" />
+              <span className="font-medium">{jobs.length} jobs available</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="text-right">
+                <div className="text-xs text-blue-100">Total Rewards</div>
+                <div className="font-bold">RM {jobs.reduce((sum, job) => sum + job.reward, 0)}</div>
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="p-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors"
+                title="Refresh map"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Mock Map Area */}
-      <div className="relative h-64 bg-gradient-to-br from-blue-50 to-green-50 overflow-hidden">
-        {/* Grid pattern to simulate map */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="grid grid-cols-8 grid-rows-8 h-full">
-            {Array.from({ length: 64 }).map((_, i) => (
-              <div key={i} className="border border-gray-300"></div>
+      {/* Enhanced Mock Map Area */}
+      <div className="relative h-80 bg-gradient-to-br from-blue-100 via-green-50 to-blue-50 overflow-hidden">
+        {/* Map background pattern */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="grid grid-cols-12 grid-rows-12 h-full">
+            {Array.from({ length: 144 }).map((_, i) => (
+              <div key={i} className="border border-gray-200"></div>
             ))}
           </div>
         </div>
 
-        {/* Area Labels */}
-        <div className="absolute top-4 left-4 text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded">
-          KLCC
+        {/* Roads/Streets simulation */}
+        <div className="absolute inset-0">
+          {/* Horizontal roads */}
+          <div className="absolute top-1/4 left-0 right-0 h-1 bg-gray-300 opacity-60"></div>
+          <div className="absolute top-1/2 left-0 right-0 h-2 bg-gray-400 opacity-70"></div>
+          <div className="absolute top-3/4 left-0 right-0 h-1 bg-gray-300 opacity-60"></div>
+
+          {/* Vertical roads */}
+          <div className="absolute left-1/4 top-0 bottom-0 w-1 bg-gray-300 opacity-60"></div>
+          <div className="absolute left-1/2 top-0 bottom-0 w-2 bg-gray-400 opacity-70"></div>
+          <div className="absolute left-3/4 top-0 bottom-0 w-1 bg-gray-300 opacity-60"></div>
         </div>
-        <div className="absolute top-4 right-4 text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded">
-          Mont Kiara
+
+        {/* Building blocks simulation */}
+        <div className="absolute inset-0">
+          {/* Commercial areas */}
+          <div className="absolute top-8 left-8 w-16 h-12 bg-gray-200 opacity-40 rounded"></div>
+          <div className="absolute top-8 right-8 w-20 h-16 bg-gray-200 opacity-40 rounded"></div>
+          <div className="absolute bottom-8 left-8 w-18 h-14 bg-gray-200 opacity-40 rounded"></div>
+          <div className="absolute bottom-8 right-8 w-16 h-12 bg-gray-200 opacity-40 rounded"></div>
+
+          {/* Parks/green areas */}
+          <div className="absolute top-1/3 left-1/3 w-12 h-8 bg-green-200 opacity-50 rounded-full"></div>
+          <div className="absolute bottom-1/3 right-1/3 w-10 h-10 bg-green-200 opacity-50 rounded-full"></div>
         </div>
-        <div className="absolute bottom-4 left-4 text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded">
-          Bangsar
+
+        {/* Enhanced Area Labels */}
+        <div className="absolute top-4 left-4 text-xs font-semibold text-gray-700 bg-white px-3 py-2 rounded-lg shadow-sm border">
+          🏢 KLCC
         </div>
-        <div className="absolute bottom-4 right-4 text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded">
-          PJ
+        <div className="absolute top-4 right-4 text-xs font-semibold text-gray-700 bg-white px-3 py-2 rounded-lg shadow-sm border">
+          🏘️ Mont Kiara
+        </div>
+        <div className="absolute bottom-4 left-4 text-xs font-semibold text-gray-700 bg-white px-3 py-2 rounded-lg shadow-sm border">
+          🌆 Bangsar
+        </div>
+        <div className="absolute bottom-4 right-4 text-xs font-semibold text-gray-700 bg-white px-3 py-2 rounded-lg shadow-sm border">
+          🏬 Petaling Jaya
+        </div>
+
+        {/* Central area label */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-semibold text-gray-600 bg-white bg-opacity-90 px-3 py-2 rounded-lg shadow-sm border">
+          📍 Kuala Lumpur City Center
         </div>
 
         {/* Job Markers */}
@@ -115,19 +166,29 @@ const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
                 if (onJobSelect) onJobSelect(location.job)
               }}
             >
-              <div className={`w-8 h-8 rounded-full ${getRewardColor(location.job.reward)} flex items-center justify-center text-white text-xs font-bold shadow-lg hover:scale-110 transition-transform`}>
-                <span className="text-lg">{getItemIcon(location.job.itemType)}</span>
+              <div className={`w-10 h-10 rounded-full ${getRewardColor(location.job.reward)} flex items-center justify-center text-white text-xs font-bold shadow-xl hover:scale-125 transition-all duration-200 border-2 border-white`}>
+                <span className="text-xl">{getItemIcon(location.job.itemType)}</span>
               </div>
-              
-              {/* Reward badge */}
-              <div className="absolute -top-2 -right-2 bg-white text-xs font-bold text-gray-800 px-1 py-0.5 rounded-full shadow border">
+
+              {/* Enhanced reward badge */}
+              <div className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-xs font-bold text-gray-900 px-2 py-1 rounded-full shadow-lg border-2 border-white">
                 RM{location.job.reward}
               </div>
-              
+
+              {/* Weight indicator */}
+              <div className="absolute -bottom-3 -left-1 bg-blue-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-md">
+                {location.job.weight}kg
+              </div>
+
               {/* Pulse animation for new jobs */}
               {location.job.status === 'posted' && (
-                <div className={`absolute inset-0 rounded-full ${getRewardColor(location.job.reward)} animate-ping opacity-75`}></div>
+                <div className={`absolute inset-0 rounded-full ${getRewardColor(location.job.reward)} animate-ping opacity-60`}></div>
               )}
+
+              {/* Hover tooltip */}
+              <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                {location.job.title}
+              </div>
             </motion.div>
           )
         })}
@@ -135,8 +196,22 @@ const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
         {/* User location (if available) */}
         {userLocation && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <div className="w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-lg">
+            <div className="w-5 h-5 bg-blue-600 rounded-full border-3 border-white shadow-lg">
               <div className="w-full h-full bg-blue-400 rounded-full animate-pulse"></div>
+            </div>
+            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+              📍 You are here
+            </div>
+          </div>
+        )}
+
+        {/* No Jobs State */}
+        {jobs.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center p-8 bg-white bg-opacity-90 rounded-xl shadow-lg">
+              <div className="text-4xl mb-3">🗺️</div>
+              <h4 className="font-semibold text-gray-700 mb-2">No Jobs Available</h4>
+              <p className="text-sm text-gray-600">Check back later for new recycling opportunities!</p>
             </div>
           </div>
         )}

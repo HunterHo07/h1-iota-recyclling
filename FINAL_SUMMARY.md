@@ -1,11 +1,11 @@
-# 🎉 IOTA Recycling MVP - "Grab for Green" 
+# 🎉 Grab Recycle - "Grab for Green"
 ## ✅ HACKATHON SUBMISSION COMPLETE
 
 **All tasks completed successfully! Ready for IOTA Hackathon 2025 evaluation.**
 
 ---
 
-## 🏆 **Project Overview: "Grab for Green"**
+## 🏆 **Project Overview: "Grab Recycle"**
 
 ### 💡 **The Big Idea**
 Inspired by Grab's success in Southeast Asia, we created a two-sided marketplace for recycling where:
