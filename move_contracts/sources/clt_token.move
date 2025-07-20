@@ -15,11 +15,12 @@ module recycling_marketplace::clt_token {
     use iota::object::{Self, UID};
     use iota::transfer;
     use iota::tx_context::{Self, TxContext};
-    use iota::coin::{Self, Coin, TreasuryCap};
+    use iota::coin::{Self, TreasuryCap};
     use iota::event;
     use iota::clock::{Self, Clock};
     use std::string::{Self, String};
     use std::option::{Self, Option};
+    use std::vector;
 
     // ===== Error Codes =====
     const ETokenExpired: u64 = 1;
@@ -36,8 +37,8 @@ module recycling_marketplace::clt_token {
 
     // ===== Structs =====
 
-    /// The CLT token type
-    public struct CLT has drop {}
+    /// The CLT token one-time witness type (must match module name in uppercase)
+    public struct CLT_TOKEN has drop {}
 
     /// CLT Token Registry for managing token lifecycle
     public struct CLTRegistry has key {
@@ -45,7 +46,7 @@ module recycling_marketplace::clt_token {
         admin: address,
         total_minted: u64,
         total_redeemed: u64,
-        treasury_cap: TreasuryCap<CLT>,
+        treasury_cap: TreasuryCap<CLT_TOKEN>,
         authorized_minters: vector<address>,
         authorized_redeemers: vector<address>,
     }
@@ -114,7 +115,7 @@ module recycling_marketplace::clt_token {
     // ===== Module Initializer =====
 
     /// Initialize CLT token system
-    fun init(witness: CLT, ctx: &mut TxContext) {
+    fun init(witness: CLT_TOKEN, ctx: &mut TxContext) {
         // Create the currency
         let (treasury_cap, metadata) = coin::create_currency(
             witness,

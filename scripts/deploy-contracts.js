@@ -128,22 +128,113 @@ class IOTAContractDeployer {
   }
 
   /**
-   * Simulate contract deployment (replace with real IOTA Move deployment)
+   * Deploy real IOTA Move contract (replaces simulation)
    */
   async simulateContractDeployment(contractConfig) {
-    // Simulate deployment time
+    console.log(`🔄 Attempting real IOTA Move deployment for ${contractConfig.name}...`)
+
+    try {
+      // Try real deployment first
+      const realDeployment = await this.deployRealIOTAContract(contractConfig)
+      if (realDeployment.success) {
+        return realDeployment
+      }
+    } catch (error) {
+      console.warn(`⚠️ Real deployment failed: ${error.message}`)
+      console.log('📝 Falling back to simulation for demo purposes...')
+    }
+
+    // Fallback to simulation
     await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Generate IOTA-style contract address
+
+    // Generate realistic IOTA-style contract address (for demo)
     const contractAddress = `iota_contract_${contractConfig.name.toLowerCase()}_${Date.now()}`
-    
-    // Simulate transaction
     const transactionId = `iota_deploy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
+
     return {
       address: contractAddress,
       transactionId,
-      status: 'confirmed'
+      status: 'simulated',
+      isDemo: true
+    }
+  }
+
+  /**
+   * Deploy real IOTA Move contract using IOTA CLI
+   */
+  async deployRealIOTAContract(contractConfig) {
+    console.log(`🌐 Deploying real IOTA Move contract: ${contractConfig.name}`)
+
+    try {
+      // Check if IOTA CLI is available
+      const { execSync } = await import('child_process')
+
+      // Try to find IOTA CLI
+      try {
+        execSync('iota --version', { stdio: 'pipe' })
+      } catch (cliError) {
+        throw new Error('IOTA CLI not found. Please install IOTA CLI tools.')
+      }
+
+      // Build the Move package
+      console.log('🔨 Building Move package...')
+      const buildResult = execSync('cd move_contracts && iota move build', {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      })
+
+      console.log('✅ Move package built successfully')
+
+      // Deploy to testnet
+      console.log('🚀 Deploying to IOTA testnet...')
+      const deployResult = execSync('cd move_contracts && iota client publish --gas-budget 20000000', {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      })
+
+      // Parse deployment result
+      const deploymentInfo = this.parseDeploymentResult(deployResult)
+
+      return {
+        success: true,
+        address: deploymentInfo.packageId,
+        transactionId: deploymentInfo.transactionDigest,
+        status: 'confirmed',
+        isReal: true
+      }
+
+    } catch (error) {
+      console.error(`❌ Real deployment failed: ${error.message}`)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Parse IOTA CLI deployment result
+   */
+  parseDeploymentResult(deployResult) {
+    try {
+      // Parse the CLI output to extract package ID and transaction digest
+      const lines = deployResult.split('\n')
+      let packageId = null
+      let transactionDigest = null
+
+      for (const line of lines) {
+        if (line.includes('Package ID:')) {
+          packageId = line.split(':')[1].trim()
+        }
+        if (line.includes('Transaction Digest:')) {
+          transactionDigest = line.split(':')[1].trim()
+        }
+      }
+
+      if (!packageId || !transactionDigest) {
+        throw new Error('Could not parse deployment result')
+      }
+
+      return { packageId, transactionDigest }
+    } catch (error) {
+      throw new Error(`Failed to parse deployment result: ${error.message}`)
     }
   }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, Navigation, Zap, Package, RefreshCw } from 'lucide-react'
+import { formatDualCurrency, iotaToMYR } from '@utils/currency'
 
 const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
   const [selectedJob, setSelectedJob] = useState(null)
@@ -48,8 +49,9 @@ const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
   }
 
   const getRewardColor = (reward) => {
-    if (reward >= 20) return 'bg-green-500'
-    if (reward >= 10) return 'bg-yellow-500'
+    const myrValue = iotaToMYR(reward)
+    if (myrValue >= 20) return 'bg-green-500'
+    if (myrValue >= 10) return 'bg-yellow-500'
     return 'bg-blue-500'
   }
 
@@ -75,7 +77,7 @@ const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
             <div className="flex items-center space-x-3">
               <div className="text-right">
                 <div className="text-xs text-blue-100">Total Rewards</div>
-                <div className="font-bold">RM {jobs.reduce((sum, job) => sum + job.reward, 0)}</div>
+                <div className="font-bold">{formatDualCurrency(jobs.reduce((sum, job) => sum + job.reward, 0), false)}</div>
               </div>
               <button
                 onClick={() => window.location.reload()}
@@ -172,7 +174,7 @@ const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
 
               {/* Enhanced reward badge */}
               <div className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-xs font-bold text-gray-900 px-2 py-1 rounded-full shadow-lg border-2 border-white">
-                RM{location.job.reward}
+                {iotaToMYR(location.job.reward).toFixed(0)}
               </div>
 
               {/* Weight indicator */}
@@ -241,7 +243,7 @@ const JobMap = ({ jobs = [], onJobSelect, userLocation = null }) => {
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg font-bold text-green-600">RM {selectedJob.reward}</span>
+                  <span className="text-lg font-bold text-green-600">{formatDualCurrency(selectedJob.reward, false)}</span>
                   <button
                     onClick={() => onJobSelect && onJobSelect(selectedJob)}
                     className="bg-primary-600 text-white px-3 py-1 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"

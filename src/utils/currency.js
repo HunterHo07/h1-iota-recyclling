@@ -17,7 +17,7 @@ export const IOTA_TO_MYR_RATE = IOTA_TO_USD * USD_TO_MYR // ~1.125 MYR per IOTA
  */
 export const iotaToMYR = (iotaAmount) => {
   if (!iotaAmount || isNaN(iotaAmount)) return 0
-  return iotaAmount * IOTA_TO_MYR_RATE
+  return Math.round((iotaAmount * IOTA_TO_MYR_RATE) * 100) / 100 // Round to 2 decimal places
 }
 
 /**
@@ -25,7 +25,8 @@ export const iotaToMYR = (iotaAmount) => {
  */
 export const myrToIOTA = (myrAmount) => {
   if (!myrAmount || isNaN(myrAmount)) return 0
-  return myrAmount / IOTA_TO_MYR_RATE
+  const iotaAmount = myrAmount / IOTA_TO_MYR_RATE
+  return Math.round(iotaAmount * 1000) / 1000 // Round to 3 decimal places
 }
 
 /**
@@ -33,7 +34,9 @@ export const myrToIOTA = (myrAmount) => {
  */
 export const formatIOTA = (amount, decimals = 3) => {
   if (!amount || isNaN(amount)) return '0.000 IOTA'
-  return `${parseFloat(amount).toFixed(decimals)} IOTA`
+  const numAmount = parseFloat(amount)
+  const roundedAmount = Math.round(numAmount * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  return `${roundedAmount.toFixed(decimals)} IOTA`
 }
 
 /**
@@ -41,17 +44,23 @@ export const formatIOTA = (amount, decimals = 3) => {
  */
 export const formatMYR = (amount, decimals = 2) => {
   if (!amount || isNaN(amount)) return 'RM 0.00'
-  return `RM ${parseFloat(amount).toFixed(decimals)}`
+  const numAmount = parseFloat(amount)
+  const roundedAmount = Math.round(numAmount * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  return `RM ${roundedAmount.toFixed(decimals)}`
 }
 
 /**
  * Format dual currency display (IOTA + MYR equivalent)
  */
 export const formatDualCurrency = (iotaAmount, showIOTAFirst = true) => {
+  if (!iotaAmount || isNaN(iotaAmount)) {
+    return showIOTAFirst ? '0.000 IOTA (RM 0.00)' : 'RM 0.00 (0.000 IOTA)'
+  }
+
   const iota = formatIOTA(iotaAmount)
   const myr = formatMYR(iotaToMYR(iotaAmount))
-  
-  return showIOTAFirst 
+
+  return showIOTAFirst
     ? `${iota} (${myr})`
     : `${myr} (${iota})`
 }
@@ -72,11 +81,11 @@ export const getExchangeRateInfo = () => {
 /**
  * Currency conversion component helper
  */
-export const CurrencyDisplay = ({ 
-  iotaAmount, 
-  showBoth = true, 
+export const CurrencyDisplay = ({
+  iotaAmount,
+  showBoth = true,
   primaryCurrency = 'IOTA',
-  className = '' 
+  _className = ''
 }) => {
   if (!showBoth) {
     return primaryCurrency === 'IOTA' 

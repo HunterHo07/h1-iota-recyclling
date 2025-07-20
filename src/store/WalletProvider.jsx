@@ -333,8 +333,8 @@ export const WalletProvider = ({ children }) => {
 
     // Utility functions
     formatAddress: (addr) => addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '',
-    formatBalance: (bal) => parseFloat(bal).toFixed(3),
-    formatBalanceWithMYR: (bal) => formatDualCurrency(parseFloat(bal)),
+    formatBalance: (bal) => (Math.round(parseFloat(bal) * 1000) / 1000).toFixed(3),
+    formatBalanceWithMYR: (bal) => formatDualCurrency(Math.round(parseFloat(bal) * 1000) / 1000),
     getBalanceInMYR: (bal) => iotaToMYR(parseFloat(bal)),
     formatIOTA,
     formatMYR,

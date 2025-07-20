@@ -23,7 +23,6 @@ module recycling_marketplace::marketplace {
     use iota::event;
     use iota::clock::{Self, Clock};
     use std::string::{Self, String};
-    use std::vector;
     use std::option;
 
     // ===== Error Codes =====
@@ -139,7 +138,7 @@ module recycling_marketplace::marketplace {
             admin: tx_context::sender(ctx),
             total_jobs: 0,
             total_rewards_distributed: 0,
-            platform_fee_rate: 250, // 2.5% platform fee
+            platform_fee_rate: 500, // 5% platform fee
         };
 
         transfer::share_object(marketplace);
@@ -276,7 +275,6 @@ module recycling_marketplace::marketplace {
         let collector_reward = reward_amount - platform_fee;
 
         // Extract coins from escrow
-        let total_escrow = coin::value(&job.escrow);
         let collector_payment = coin::split(&mut job.escrow, collector_reward, ctx);
         let platform_payment = coin::split(&mut job.escrow, platform_fee, ctx);
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Calculator, Info, TrendingUp } from 'lucide-react'
-import { myrToIOTA, formatDualCurrency } from '@utils/currency'
+import { myrToIOTA, formatDualCurrency, formatIOTA } from '@utils/currency'
 
 const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
   const [suggestedReward, setSuggestedReward] = useState(0)
@@ -32,7 +32,7 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
       const totalRewardRM = Math.max(5, Math.round((materialValue + convenienceFee + platformFee) * 100) / 100)
 
       // Convert RM to IOTA for blockchain transactions
-      const totalRewardIOTA = myrToIOTA(totalRewardRM)
+      const totalRewardIOTA = Math.round(myrToIOTA(totalRewardRM) * 1000) / 1000
 
       setSuggestedReward(totalRewardIOTA)
       setMarketRates(rate)
@@ -87,7 +87,7 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Market Rate ({itemType})</span>
             <span className="text-sm text-gray-600">
-              RM {marketRates.min} - {marketRates.max}/kg
+              RM {marketRates.min?.toFixed(2)} - {marketRates.max?.toFixed(2)}/kg
             </span>
           </div>
           <div className="text-xs text-gray-500">
@@ -104,7 +104,7 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
                 {formatDualCurrency(suggestedReward, false)}
               </div>
               <div className="text-xs text-gray-500">
-                {suggestedReward.toFixed(3)} IOTA
+                {formatIOTA(suggestedReward)}
               </div>
             </div>
           </div>
@@ -131,11 +131,11 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
             </div>
             <div className="flex justify-between font-medium border-t pt-1">
               <span>Total you pay:</span>
-              <span>RM {suggestedReward.toFixed(2)}</span>
+              <span>{formatDualCurrency(suggestedReward, false)}</span>
             </div>
             <div className="flex justify-between text-green-600 text-xs">
               <span>Collector receives:</span>
-              <span>RM {(suggestedReward * 0.95).toFixed(2)} (no fees)</span>
+              <span>{formatDualCurrency(Math.round(suggestedReward * 0.95 * 1000) / 1000, false)} (no fees)</span>
             </div>
           </div>
         </div>

@@ -24,6 +24,7 @@ const JobForm = ({ onSubmit, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showTransactionPopup, setShowTransactionPopup] = useState(false)
   const [pendingJobData, setPendingJobData] = useState(null)
+  const [showDummyOptions, setShowDummyOptions] = useState(false)
   const fileInputRef = useRef(null)
   
   const { addJob } = useAppState()
@@ -48,6 +49,46 @@ const JobForm = ({ onSubmit, onCancel }) => {
     { value: 'paper', label: 'Paper', icon: '📄' },
     { value: 'electronics', label: 'Electronics', icon: '📱' },
     { value: 'other', label: 'Other', icon: '♻️' }
+  ]
+
+  // Dummy photos for testing
+  const dummyPhotos = [
+    {
+      id: 'cardboard',
+      name: 'Cardboard Boxes',
+      url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop&auto=format',
+      description: 'Clean cardboard boxes'
+    },
+    {
+      id: 'plastic',
+      name: 'Plastic Bottles',
+      url: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=400&h=300&fit=crop&auto=format',
+      description: 'Plastic bottles collection'
+    },
+    {
+      id: 'electronics',
+      name: 'Old Electronics',
+      url: 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?w=400&h=300&fit=crop&auto=format',
+      description: 'Electronic waste items'
+    },
+    {
+      id: 'glass',
+      name: 'Glass Bottles',
+      url: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=300&fit=crop&auto=format',
+      description: 'Glass bottles and jars'
+    },
+    {
+      id: 'metal',
+      name: 'Metal Cans',
+      url: 'https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?w=400&h=300&fit=crop&auto=format',
+      description: 'Aluminum cans'
+    },
+    {
+      id: 'paper',
+      name: 'Paper Waste',
+      url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&auto=format',
+      description: 'Paper documents and newspapers'
+    }
   ]
 
   const handleImageSelect = (event) => {
@@ -78,15 +119,21 @@ const JobForm = ({ onSubmit, onCancel }) => {
   }
 
   const onFormSubmit = async (data) => {
+    console.log('🚀 Form submission started', { data, isConnected, selectedImage })
+
     if (!isConnected) {
+      console.log('❌ Wallet not connected')
       toast.error('Please connect your wallet first')
       return
     }
 
     if (!selectedImage) {
+      console.log('❌ No image selected')
       toast.error('Please add a photo of your recyclables')
       return
     }
+
+    console.log('✅ Validation passed, preparing job data...')
 
     // Prepare job data and show transaction popup
     const jobData = {
@@ -97,8 +144,10 @@ const JobForm = ({ onSubmit, onCancel }) => {
       itemType: data.itemType
     }
 
+    console.log('📋 Job data prepared:', jobData)
     setPendingJobData(jobData)
     setShowTransactionPopup(true)
+    console.log('🔄 Transaction popup should show now')
   }
 
   const handleTransactionConfirm = async (txResult) => {
@@ -147,7 +196,12 @@ const JobForm = ({ onSubmit, onCancel }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6"
+              onSubmit={(e) => {
+                console.log('📝 Form onSubmit event triggered')
+                console.log('🔍 Current form errors:', errors)
+                console.log('🔍 Form values:', watch())
+              }}>
           {/* Photo Upload */}
           <div>
             <label className="form-label">
@@ -295,14 +349,24 @@ const JobForm = ({ onSubmit, onCancel }) => {
               <input
                 {...register('reward', {
                   required: 'Reward amount is required',
-                  min: { value: 5, message: 'Minimum reward is RM 5' }
+                  min: { value: 0.1, message: 'Minimum reward is 0.1 IOTA' },
+                  validate: (value) => {
+                    const num = parseFloat(value)
+                    if (isNaN(num) || num <= 0) {
+                      return 'Invalid reward amount'
+                    }
+                    return true
+                  }
                 })}
                 type="number"
-                step="0.01"
+                step="0.001"
                 className="form-input bg-gray-50 text-gray-700 cursor-not-allowed"
                 placeholder="Auto-calculated based on weight and material"
                 readOnly
               />
+              {errors.reward && (
+                <p className="text-red-500 text-sm mt-1">{errors.reward.message}</p>
+              )}
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
                 Market Rate
               </div>
@@ -315,7 +379,12 @@ const JobForm = ({ onSubmit, onCancel }) => {
             <RewardCalculator
               itemType={watch('itemType')}
               weight={watchedWeight}
-              onRewardChange={(amount) => setValue('reward', amount)}
+              onRewardChange={(amount) => {
+                // Round to 3 decimal places for display
+                const roundedAmount = Math.round(amount * 1000) / 1000
+                console.log('💰 Reward calculated:', { amount, roundedAmount })
+                setValue('reward', roundedAmount)
+              }}
             />
           </div>
 
@@ -334,6 +403,7 @@ const JobForm = ({ onSubmit, onCancel }) => {
               type="submit"
               disabled={isSubmitting || !isConnected}
               className="flex-1 btn-primary flex items-center justify-center"
+              onClick={() => console.log('🔘 Post Job button clicked', { isSubmitting, isConnected, errors })}
             >
               {isSubmitting ? (
                 <>

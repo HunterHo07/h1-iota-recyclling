@@ -156,14 +156,9 @@ const Navbar = () => {
                 {/* Balance Display */}
                 <div className="flex items-center space-x-2 bg-accent-50 px-3 py-2 rounded-lg">
                   <Coins className="h-4 w-4 text-accent-600" />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-accent-700">
-                      {formatBalance(balance)} IOTA
-                    </span>
-                    <span className="text-xs text-accent-600">
-                      {formatBalanceWithMYR(balance)}
-                    </span>
-                  </div>
+                  <span className="text-sm font-semibold text-accent-700">
+                    {formatBalanceWithMYR(balance)}
+                  </span>
                 </div>
 
                 {/* Wallet Address */}
