@@ -158,13 +158,36 @@ const JobForm = ({ onSubmit, onCancel }) => {
       // Simulate image upload to IPFS
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      const newJob = addJob(pendingJobData)
+      // Add transaction ID to job data
+      const jobDataWithTx = {
+        ...pendingJobData,
+        transactionId: txResult.transactionId || txResult.hash,
+        blockNumber: txResult.blockNumber,
+        timestamp: txResult.timestamp
+      }
+
+      const newJob = addJob(jobDataWithTx)
 
       if (onSubmit) {
         onSubmit(newJob)
       }
 
-      toast.success('Job posted successfully!')
+      // Show success with transaction link
+      toast.success(
+        <div>
+          <div className="font-semibold">🎉 Job Posted Successfully!</div>
+          <div className="text-sm text-gray-600 mt-1">Live on IOTA Testnet</div>
+          {txResult.transactionId && (
+            <button
+              onClick={() => window.open(`https://explorer.iota.org/?network=testnet&query=${txResult.transactionId}`, '_blank')}
+              className="text-blue-600 hover:text-blue-800 text-xs mt-2 flex items-center"
+            >
+              View live transaction →
+            </button>
+          )}
+        </div>,
+        { duration: 8000 }
+      )
 
     } catch (error) {
       console.error('Error posting job:', error)
@@ -196,12 +219,7 @@ const JobForm = ({ onSubmit, onCancel }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6"
-              onSubmit={(e) => {
-                console.log('📝 Form onSubmit event triggered')
-                console.log('🔍 Current form errors:', errors)
-                console.log('🔍 Form values:', watch())
-              }}>
+        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6">
           {/* Photo Upload */}
           <div>
             <label className="form-label">
@@ -403,7 +421,6 @@ const JobForm = ({ onSubmit, onCancel }) => {
               type="submit"
               disabled={isSubmitting || !isConnected}
               className="flex-1 btn-primary flex items-center justify-center"
-              onClick={() => console.log('🔘 Post Job button clicked', { isSubmitting, isConnected, errors })}
             >
               {isSubmitting ? (
                 <>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  X, 
-  Loader, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  X,
+  Loader,
+  CheckCircle,
+  AlertCircle,
   ExternalLink,
   Copy,
   Clock,
@@ -12,6 +12,7 @@ import {
   Coins
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useWallet } from '@store/WalletProvider'
 
 const TransactionPopup = ({ 
   isOpen, 
@@ -22,25 +23,11 @@ const TransactionPopup = ({
 }) => {
   const [step, setStep] = useState('confirm') // confirm, processing, success, error
   const [txHash, setTxHash] = useState('')
-  const [gasEstimate, setGasEstimate] = useState('0.002')
+  const [gasEstimate] = useState('0.000') // IOTA is feeless!
+  const [error, setError] = useState('')
   const [countdown, setCountdown] = useState(30)
 
-  useEffect(() => {
-    if (step === 'processing') {
-      const timer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            setStep('success')
-            setTxHash('0x' + Math.random().toString(16).substr(2, 64))
-            return 0
-          }
-          return prev - 1
-        })
-      }, 100) // Fast countdown for demo
-
-      return () => clearInterval(timer)
-    }
-  }, [step])
+  const { sendTransaction, updateBalance } = useWallet()
 
   const getTransactionTitle = () => {
     switch (transaction?.method) {
@@ -69,18 +56,59 @@ const TransactionPopup = ({
 
   const handleConfirm = async () => {
     setStep('processing')
-    setCountdown(30)
-    
-    // Simulate transaction processing
-    setTimeout(() => {
-      if (onConfirm) {
-        onConfirm({
-          hash: '0x' + Math.random().toString(16).substr(2, 64),
-          gasUsed: gasEstimate,
-          status: 'success'
-        })
+    setError('')
+
+    try {
+      // Prepare transaction data based on method
+      let transactionData = {}
+
+      if (transaction?.method === 'postJob') {
+        // Job posting transaction - user pays gas fee
+        transactionData = {
+          method: 'create_job',
+          params: transaction.params,
+          amount: '0.001', // Small gas fee for job posting
+          to: 'marketplace_contract'
+        }
+      } else if (transaction?.method === 'claimJob') {
+        // Job claiming transaction - collector locks payment
+        transactionData = {
+          method: 'claim_job',
+          params: transaction.params,
+          amount: transaction.params.reward, // Lock reward amount
+          to: 'marketplace_contract'
+        }
       }
-    }, 3000)
+
+      // Send real IOTA transaction
+      const result = await sendTransaction(transactionData)
+
+      if (result.hash) {
+        setTxHash(result.hash)
+        setStep('success')
+
+        // Update balance after transaction
+        await updateBalance()
+
+        if (onConfirm) {
+          onConfirm({
+            hash: result.hash,
+            transactionId: result.hash,
+            gasUsed: gasEstimate,
+            status: 'success',
+            blockNumber: result.blockNumber,
+            timestamp: result.timestamp
+          })
+        }
+      } else {
+        throw new Error(result.error || 'Transaction failed')
+      }
+
+    } catch (error) {
+      console.error('Transaction failed:', error)
+      setError(error.message)
+      setStep('error')
+    }
   }
 
   const copyToClipboard = (text) => {
@@ -89,7 +117,8 @@ const TransactionPopup = ({
   }
 
   const openInExplorer = () => {
-    window.open(`https://testnet.iotascan.io/transaction/${txHash}`, '_blank')
+    // Use official IOTA explorer for testnet
+    window.open(`https://explorer.iota.org/?network=testnet&query=${txHash}`, '_blank')
   }
 
   if (!isOpen) return null
@@ -235,10 +264,14 @@ const TransactionPopup = ({
                 </motion.div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Transaction Successful!</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">🎉 Live Transaction Successful!</h3>
                   <p className="text-gray-600 text-sm">
-                    Your transaction has been confirmed on the IOTA blockchain.
+                    Your transaction is now live on the IOTA Testnet blockchain.
                   </p>
+                  <div className="flex items-center justify-center mt-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                    <span className="text-xs text-green-600 font-medium">Broadcasting to network nodes</span>
+                  </div>
                 </div>
 
                 {/* Transaction Hash */}
@@ -265,12 +298,21 @@ const TransactionPopup = ({
                   </p>
                 </div>
 
-                <button
-                  onClick={onClose}
-                  className="w-full py-3 px-4 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
-                >
-                  Done
-                </button>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 py-3 px-4 bg-gray-600 text-white rounded-xl font-medium hover:bg-gray-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={openInExplorer}
+                    className="flex-1 py-3 px-4 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View Live
+                  </button>
+                </div>
               </div>
             )}
 
@@ -282,9 +324,14 @@ const TransactionPopup = ({
 
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Transaction Failed</h3>
-                  <p className="text-gray-600 text-sm">
-                    The transaction could not be completed. Please try again.
+                  <p className="text-gray-600 text-sm mb-3">
+                    The transaction could not be completed:
                   </p>
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-red-800 text-sm">{error}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex space-x-3">

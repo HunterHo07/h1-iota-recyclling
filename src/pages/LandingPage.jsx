@@ -89,7 +89,7 @@ const LandingPage = () => {
               </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Link
                   to="/recycler"
                   className="btn-primary flex items-center justify-center group"
@@ -98,7 +98,7 @@ const LandingPage = () => {
                   I Have Recyclables
                   <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                
+
                 <Link
                   to="/collector"
                   className="btn-secondary flex items-center justify-center group"
@@ -107,6 +107,24 @@ const LandingPage = () => {
                   I'll Collect Them
                   <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
+              </div>
+
+              {/* Roadmap Button */}
+              <div className="flex justify-center mb-12">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    document.querySelector('#roadmap-section')?.scrollIntoView({
+                      behavior: 'smooth'
+                    })
+                  }}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  <span className="mr-2">🚀</span>
+                  View Roadmap: Reusable Items Coming Soon
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </motion.button>
               </div>
 
               {/* Stats Banner */}
@@ -398,6 +416,120 @@ const LandingPage = () => {
                   <span>Try It Now</span>
                   <ArrowRight className="h-5 w-5" />
                 </Link>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Roadmap Section */}
+      <section id="roadmap-section" className="py-20 bg-gradient-to-br from-purple-50 to-pink-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              🚀 Coming Soon: Reusable Items Marketplace
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Beyond recycling - turn your unwanted furniture, electronics, and household items into cash!
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Current vs Future */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="space-y-8"
+            >
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-green-200">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">♻️</span>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Current: Recyclables</h3>
+                    <p className="text-green-600 text-sm">Live Now!</p>
+                  </div>
+                </div>
+                <ul className="space-y-2 text-gray-600">
+                  <li>• Paper, plastic, metal, glass</li>
+                  <li>• Earn money from waste materials</li>
+                  <li>• Help environment through recycling</li>
+                </ul>
+              </div>
+
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-200">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">🛋️</span>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Future: Reusable Items</h3>
+                    <p className="text-purple-600 text-sm">Coming Q2 2025</p>
+                  </div>
+                </div>
+                <ul className="space-y-2 text-gray-600">
+                  <li>• TVs, sofas, furniture, electronics</li>
+                  <li>• Save disposal fees + earn money</li>
+                  <li>• One person's trash = another's treasure</li>
+                </ul>
+              </div>
+            </motion.div>
+
+            {/* Value Proposition */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl p-8 text-white"
+            >
+              <h3 className="text-2xl font-bold mb-6">💡 The Big Idea</h3>
+
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <span className="text-sm">💸</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Stop Paying Disposal Fees</h4>
+                    <p className="text-purple-100 text-sm">Instead of paying RM 50-200 to dispose of old furniture or electronics, earn money from collectors who see value in them.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <span className="text-sm">🔄</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Circular Economy</h4>
+                    <p className="text-purple-100 text-sm">Collectors can refurbish, resell, or repurpose items. What's trash to you might be treasure to someone else.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <span className="text-sm">🌍</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Environmental Impact</h4>
+                    <p className="text-purple-100 text-sm">Reduce landfill waste by giving items a second life. Every reused item is one less in the dump.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 p-4 bg-white bg-opacity-10 rounded-xl">
+                <p className="text-center text-sm">
+                  <strong>Join our waitlist</strong> to be the first to try reusable items marketplace!
+                </p>
               </div>
             </motion.div>
           </div>

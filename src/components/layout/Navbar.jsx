@@ -47,7 +47,11 @@ const Navbar = () => {
 
     // Navigate to the appropriate dashboard when role changes
     if (!isLandingPage) {
-      navigate(newRole === 'recycler' ? '/recycler' : '/collector')
+      const targetPath = newRole === 'recycler' ? '/recycler' : '/collector'
+      // Use setTimeout to ensure state update completes first
+      setTimeout(() => {
+        navigate(targetPath, { replace: true })
+      }, 100)
     }
   }
 
@@ -56,7 +60,7 @@ const Navbar = () => {
     if (!isLandingPage && (location.pathname === '/recycler' || location.pathname === '/collector')) {
       const expectedPath = userRole === 'recycler' ? '/recycler' : '/collector'
       if (location.pathname !== expectedPath) {
-        navigate(expectedPath)
+        navigate(expectedPath, { replace: true })
       }
     }
   }, [userRole, location.pathname, isLandingPage, navigate])

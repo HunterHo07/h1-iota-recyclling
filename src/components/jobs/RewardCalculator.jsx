@@ -21,24 +21,30 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
   useEffect(() => {
     if (itemType && weight) {
       const rate = baseRates[itemType] || baseRates.other
+
+      // Base material value (market rate)
       const materialValue = parseFloat(weight) * rate.avg
 
-      // Add convenience fee (40% markup for pickup service)
-      const convenienceFee = materialValue * 0.4
+      // Platform fee (5% deducted from user's payment)
+      const platformFee = materialValue * 0.05
 
-      // Platform fee (5% charged to user, collector pays nothing)
-      const platformFee = (materialValue + convenienceFee) * 0.05
+      // User receives 95% of material value
+      const userReceives = materialValue - platformFee
 
-      const totalRewardRM = Math.max(5, Math.round((materialValue + convenienceFee + platformFee) * 100) / 100)
+      // Collector pays the full material value (this gets locked in escrow)
+      const collectorPays = materialValue
+
+      // Minimum payment threshold
+      const finalCollectorPayment = Math.max(5, Math.round(collectorPays * 100) / 100)
 
       // Convert RM to IOTA for blockchain transactions
-      const totalRewardIOTA = Math.round(myrToIOTA(totalRewardRM) * 1000) / 1000
+      const collectorPaysIOTA = Math.round(myrToIOTA(finalCollectorPayment) * 1000) / 1000
 
-      setSuggestedReward(totalRewardIOTA)
+      setSuggestedReward(collectorPaysIOTA)
       setMarketRates(rate)
 
       if (onRewardChange) {
-        onRewardChange(totalRewardIOTA)
+        onRewardChange(collectorPaysIOTA)
       }
     }
   }, [itemType, weight, onRewardChange])
@@ -118,24 +124,23 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
         <div className="bg-white rounded-lg p-3 border border-blue-100">
           <div className="text-xs text-gray-600 space-y-1">
             <div className="flex justify-between">
-              <span>Material value:</span>
+              <span>Material value (market rate):</span>
               <span>RM {(parseFloat(weight || 0) * marketRates.avg).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span>Convenience fee (40%):</span>
-              <span>RM {(parseFloat(weight || 0) * marketRates.avg * 0.4).toFixed(2)}</span>
-            </div>
             <div className="flex justify-between text-orange-600">
-              <span>Platform fee (5%):</span>
-              <span>RM {((parseFloat(weight || 0) * marketRates.avg * 1.4) * 0.05).toFixed(2)}</span>
+              <span>Platform fee (5% deducted):</span>
+              <span>RM {(parseFloat(weight || 0) * marketRates.avg * 0.05).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between font-medium border-t pt-1">
-              <span>Total you pay:</span>
+            <div className="flex justify-between font-medium border-t pt-1 text-blue-600">
+              <span>Collector pays (locked in escrow):</span>
               <span>{formatDualCurrency(suggestedReward, false)}</span>
             </div>
-            <div className="flex justify-between text-green-600 text-xs">
-              <span>Collector receives:</span>
-              <span>{formatDualCurrency(Math.round(suggestedReward * 0.95 * 1000) / 1000, false)} (no fees)</span>
+            <div className="flex justify-between text-green-600 font-medium">
+              <span>You receive (after platform fee):</span>
+              <span>{formatDualCurrency(Math.round(suggestedReward * 0.95 * 1000) / 1000, false)}</span>
+            </div>
+            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-2">
+              💡 Collector locks payment when accepting job. You receive 95% after successful collection.
             </div>
           </div>
         </div>
@@ -144,13 +149,15 @@ const RewardCalculator = ({ itemType, weight, onRewardChange }) => {
         <div className="flex items-start space-x-2 text-xs text-blue-700">
           <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium mb-1">💡 Smart Pricing System</p>
+            <p className="font-medium mb-1">🔄 How Payment Works</p>
             <p className="mb-2">
-              <strong>For You:</strong> Pay 5% platform fee for secure transactions and dispute protection.
+              <strong>1. Collector Accepts:</strong> Payment gets locked in smart contract escrow
+            </p>
+            <p className="mb-2">
+              <strong>2. Collection Complete:</strong> You receive 95% of material value
             </p>
             <p>
-              <strong>For Collectors:</strong> No fees! We cover their transport costs to help the environment.
-              Payment is guaranteed through our escrow system.
+              <strong>3. Platform Fee:</strong> 5% covers transaction security and dispute resolution
             </p>
           </div>
         </div>

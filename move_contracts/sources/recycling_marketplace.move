@@ -34,6 +34,8 @@ module recycling_marketplace::marketplace {
     const EJobAlreadyCompleted: u64 = 6;
     const EInsufficientReward: u64 = 7;
     const EInvalidProof: u64 = 8;
+    const EInsufficientPayment: u64 = 9;
+    const EJobNotInProgress: u64 = 10;
 
     // ===== Job Status Constants =====
     const STATUS_OPEN: u8 = 0;
@@ -70,6 +72,11 @@ module recycling_marketplace::marketplace {
         completed_at: Option<u64>,
         proof_hash: Option<String>,
         escrow: Coin<IOTA>,
+        // Dispute fields
+        dispute_reason: Option<vector<u8>>,
+        disputed_amount: Option<u64>,
+        disputed_at: Option<u64>,
+        resolved_amount: Option<u64>,
     }
 
     /// User profile for reputation tracking
@@ -129,6 +136,23 @@ module recycling_marketplace::marketplace {
         actual_weight: u64,
     }
 
+    public struct JobDisputed has copy, drop {
+        job_id: u64,
+        collector: address,
+        original_amount: u64,
+        disputed_amount: u64,
+        disputed_at: u64,
+    }
+
+    public struct DisputeResolved has copy, drop {
+        job_id: u64,
+        collector: address,
+        original_amount: u64,
+        final_amount: u64,
+        refund_amount: u64,
+        resolved_at: u64,
+    }
+
     // ===== Module Initializer =====
 
     /// Initialize the marketplace when the module is published
@@ -181,6 +205,11 @@ module recycling_marketplace::marketplace {
             completed_at: std::option::none(),
             proof_hash: std::option::none(),
             escrow: reward,
+            // Initialize dispute fields
+            dispute_reason: std::option::none(),
+            disputed_amount: std::option::none(),
+            disputed_at: std::option::none(),
+            resolved_amount: std::option::none(),
         };
 
         // Emit job posted event
@@ -196,15 +225,26 @@ module recycling_marketplace::marketplace {
         transfer::share_object(job);
     }
 
-    /// Claim an available recycling job
+    /// Claim an available recycling job with payment lock
+    /// Collector must send payment equal to reward_amount to lock in escrow
     public entry fun claim_job(
         job: &mut RecyclingJob,
+        payment: Coin<IOTA>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
         assert!(job.status == STATUS_OPEN, EJobAlreadyClaimed);
-        
+
         let collector = tx_context::sender(ctx);
+        let payment_amount = coin::value(&payment);
+
+        // Verify collector sent correct payment amount
+        assert!(payment_amount == job.reward_amount, EInsufficientPayment);
+
+        // Lock payment in job escrow
+        coin::join(&mut job.escrow, payment);
+
+        // Update job status
         job.collector = std::option::some(collector);
         job.status = STATUS_CLAIMED;
         job.claimed_at = std::option::some(clock::timestamp_ms(clock));
@@ -256,6 +296,7 @@ module recycling_marketplace::marketplace {
     }
 
     /// Complete job and release payment (called by job poster after verification)
+    /// Payment Flow: Collector's locked payment → 95% to User + 5% to Platform
     public entry fun complete_job(
         marketplace: &mut Marketplace,
         job: &mut RecyclingJob,
@@ -267,20 +308,20 @@ module recycling_marketplace::marketplace {
         assert!(std::option::is_some(&job.collector), EJobNotClaimed);
         assert!(std::option::is_some(&job.proof_hash), EInvalidProof);
 
-        let collector = *std::option::borrow(&job.collector);
+        let job_poster = job.poster;
         let reward_amount = job.reward_amount;
-        
-        // Calculate platform fee
-        let platform_fee = (reward_amount * marketplace.platform_fee_rate) / 10000;
-        let collector_reward = reward_amount - platform_fee;
 
-        // Extract coins from escrow
-        let collector_payment = coin::split(&mut job.escrow, collector_reward, ctx);
+        // Calculate platform fee (5% deducted from user's payment)
+        let platform_fee = (reward_amount * marketplace.platform_fee_rate) / 10000;
+        let user_payment = reward_amount - platform_fee; // User gets 95%
+
+        // Extract coins from escrow (collector's locked payment)
+        let user_payment_coins = coin::split(&mut job.escrow, user_payment, ctx);
         let platform_payment = coin::split(&mut job.escrow, platform_fee, ctx);
 
         // Transfer payments
-        transfer::public_transfer(collector_payment, collector);
-        transfer::public_transfer(platform_payment, marketplace.admin);
+        transfer::public_transfer(user_payment_coins, job_poster); // User gets 95%
+        transfer::public_transfer(platform_payment, marketplace.admin); // Platform gets 5%
 
         // Update job status
         job.status = STATUS_COMPLETED;
@@ -290,13 +331,104 @@ module recycling_marketplace::marketplace {
         marketplace.total_rewards_distributed = marketplace.total_rewards_distributed + reward_amount;
 
         // Emit job completed event
+        let collector = *std::option::borrow(&job.collector);
         event::emit(JobCompleted {
             job_id: job.job_id,
             poster: job.poster,
             collector,
-            reward_amount: collector_reward,
+            reward_amount: user_payment, // Amount user received
             actual_weight: 0, // Would get from proof
             completed_at: clock::timestamp_ms(clock),
+        });
+    }
+
+    /// Submit dispute for job (called by collector)
+    public entry fun submit_dispute(
+        job: &mut RecyclingJob,
+        dispute_reason: vector<u8>,
+        proposed_amount: u64,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(job.status == STATUS_CLAIMED, EJobNotClaimed);
+        assert!(std::option::is_some(&job.collector), EJobNotClaimed);
+
+        let collector = *std::option::borrow(&job.collector);
+        assert!(collector == tx_context::sender(ctx), ENotJobCollector);
+        assert!(proposed_amount <= job.reward_amount, EInsufficientReward);
+
+        // Update job with dispute info
+        job.status = STATUS_DISPUTED;
+        job.dispute_reason = std::option::some(dispute_reason);
+        job.disputed_amount = std::option::some(proposed_amount);
+        job.disputed_at = std::option::some(clock::timestamp_ms(clock));
+
+        // Emit dispute event
+        event::emit(JobDisputed {
+            job_id: job.job_id,
+            collector,
+            original_amount: job.reward_amount,
+            disputed_amount: proposed_amount,
+            disputed_at: clock::timestamp_ms(clock),
+        });
+    }
+
+    /// Resolve dispute with agreed amount (called by user or platform)
+    public entry fun resolve_dispute(
+        marketplace: &mut Marketplace,
+        job: &mut RecyclingJob,
+        final_amount: u64,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(job.status == STATUS_DISPUTED, EJobNotInProgress);
+
+        let sender = tx_context::sender(ctx);
+        // Can be called by job poster or marketplace admin
+        assert!(sender == job.poster || sender == marketplace.admin, ENotJobPoster);
+        assert!(final_amount <= job.reward_amount, EInsufficientReward);
+
+        let job_poster = job.poster;
+
+        // Calculate platform fee from final amount
+        let platform_fee = (final_amount * marketplace.platform_fee_rate) / 10000;
+        let user_payment = final_amount - platform_fee;
+
+        // Calculate refund to collector (if any)
+        let refund_amount = job.reward_amount - final_amount;
+
+        // Extract payments from escrow
+        let user_payment_coins = coin::split(&mut job.escrow, user_payment, ctx);
+        let platform_payment = coin::split(&mut job.escrow, platform_fee, ctx);
+
+        // Transfer payments
+        transfer::public_transfer(user_payment_coins, job_poster);
+        transfer::public_transfer(platform_payment, marketplace.admin);
+
+        // Refund remaining to collector if any
+        if (refund_amount > 0) {
+            let collector = *std::option::borrow(&job.collector);
+            let refund_coins = coin::split(&mut job.escrow, refund_amount, ctx);
+            transfer::public_transfer(refund_coins, collector);
+        };
+
+        // Update job status
+        job.status = STATUS_COMPLETED;
+        job.completed_at = std::option::some(clock::timestamp_ms(clock));
+        job.resolved_amount = std::option::some(final_amount);
+
+        // Update marketplace stats
+        marketplace.total_rewards_distributed = marketplace.total_rewards_distributed + final_amount;
+
+        // Emit resolution event
+        let collector = *std::option::borrow(&job.collector);
+        event::emit(DisputeResolved {
+            job_id: job.job_id,
+            collector,
+            original_amount: job.reward_amount,
+            final_amount,
+            refund_amount,
+            resolved_at: clock::timestamp_ms(clock),
         });
     }
 

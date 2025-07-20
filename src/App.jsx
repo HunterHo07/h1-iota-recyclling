@@ -1,5 +1,5 @@
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
 
@@ -14,7 +14,8 @@ import NotFound from '@pages/NotFound'
 
 // Import providers
 import { WalletProvider } from '@store/WalletProvider'
-import { AppStateProvider } from '@store/AppStateProvider'
+import { AppStateProvider, useAppState } from '@store/AppStateProvider'
+import { useWallet } from '@store/WalletProvider'
 
 // Import components
 import Navbar from '@components/layout/Navbar'
@@ -23,6 +24,33 @@ import LoadingScreen from '@components/ui/LoadingScreen'
 import TransactionMonitor from '@components/blockchain/TransactionMonitor'
 import WalletGuard from '@components/auth/WalletGuard'
 
+// Route Recovery Component
+const RouteRecovery = () => {
+  const { userRole } = useAppState()
+  const { isConnected } = useWallet()
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    // Handle route recovery after login/connection issues
+    if (isConnected && location.pathname === '/') {
+      const savedRole = localStorage.getItem('userRole') || userRole
+      const intendedRoute = localStorage.getItem('intended_route')
+
+      if (intendedRoute && (intendedRoute === '/recycler' || intendedRoute === '/collector')) {
+        localStorage.removeItem('intended_route')
+        navigate(intendedRoute, { replace: true })
+      } else if (savedRole === 'recycler') {
+        navigate('/recycler', { replace: true })
+      } else if (savedRole === 'collector') {
+        navigate('/collector', { replace: true })
+      }
+    }
+  }, [isConnected, location.pathname, userRole, navigate])
+
+  return null
+}
+
 function App() {
   const location = useLocation()
 
@@ -30,9 +58,12 @@ function App() {
     <WalletProvider>
       <AppStateProvider>
         <div className="min-h-screen bg-gray-50 flex flex-col">
+          {/* Route Recovery */}
+          <RouteRecovery />
+
           {/* Navigation */}
           <Navbar />
-          
+
           {/* Main Content */}
           <main className="flex-1">
             <AnimatePresence mode="wait">

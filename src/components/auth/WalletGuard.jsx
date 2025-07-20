@@ -30,12 +30,20 @@ const WalletGuard = ({ children, requireWallet = true }) => {
   const isPublicRoute = publicRoutes.includes(location.pathname)
 
   useEffect(() => {
-    // Redirect to landing if wallet required but not connected
+    // Store intended destination when wallet is required but not connected
     if (requireWallet && !isConnected && !isConnecting && !isPublicRoute) {
-      // Store intended destination for redirect after connection
       localStorage.setItem('intended_route', location.pathname)
     }
-  }, [isConnected, isConnecting, requireWallet, location.pathname, isPublicRoute])
+
+    // Redirect to intended route after successful wallet connection
+    if (isConnected && !isConnecting) {
+      const intendedRoute = localStorage.getItem('intended_route')
+      if (intendedRoute && intendedRoute !== location.pathname) {
+        localStorage.removeItem('intended_route')
+        navigate(intendedRoute, { replace: true })
+      }
+    }
+  }, [isConnected, isConnecting, requireWallet, location.pathname, isPublicRoute, navigate])
 
   // If wallet not required or user is connected, render children
   if (!requireWallet || isConnected) {

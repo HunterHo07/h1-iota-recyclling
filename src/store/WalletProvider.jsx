@@ -206,6 +206,7 @@ export const WalletProvider = ({ children }) => {
       // Store connection state
       localStorage.setItem('wallet_connected', 'true')
       localStorage.setItem('wallet_address', address)
+      localStorage.setItem('wallet_balance', balance)
       localStorage.setItem('wallet_type', walletType)
       localStorage.setItem('is_new_user', isNewUser.toString())
 
@@ -265,6 +266,21 @@ export const WalletProvider = ({ children }) => {
       // Update balance after transaction (IOTA is feeless!)
       const newBalance = await iotaClient.getBalance(address)
       updateBalance(newBalance.toString())
+
+      // Show live transaction notification
+      toast.success(
+        <div>
+          <div className="font-semibold">🎉 Transaction Successful!</div>
+          <div className="text-sm text-gray-600 mt-1">Live on IOTA Testnet</div>
+          <button
+            onClick={() => window.open(`https://explorer.iota.org/?network=testnet&query=${result.transactionId}`, '_blank')}
+            className="text-blue-600 hover:text-blue-800 text-xs mt-2 flex items-center"
+          >
+            View live transaction →
+          </button>
+        </div>,
+        { duration: 8000 }
+      )
 
       return {
         hash: result.transactionId,

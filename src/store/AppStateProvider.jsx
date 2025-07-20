@@ -104,6 +104,7 @@ export const AppStateProvider = ({ children }) => {
 
   // Action creators
   const setUserRole = (role) => {
+    console.log('🔄 Role switching:', { from: state.userRole, to: role })
     dispatch({ type: ACTIONS.SET_USER_ROLE, payload: role })
     localStorage.setItem('userRole', role)
     toast.success(`Switched to ${role} mode`)
@@ -141,24 +142,88 @@ export const AppStateProvider = ({ children }) => {
 
   const claimJob = async (jobId) => {
     dispatch({ type: ACTIONS.SET_LOADING, payload: true })
-    
+
     try {
-      // Simulate API call
+      const job = state.jobs.find(j => j.id === jobId)
+      if (!job) {
+        throw new Error('Job not found')
+      }
+
+      // Get current wallet balance from localStorage (temporary fix)
+      const walletConnected = localStorage.getItem('wallet_connected') === 'true'
+      const walletBalance = localStorage.getItem('wallet_balance') || '0'
+
+      if (!walletConnected) {
+        throw new Error('Wallet not connected')
+      }
+
+      // Check if collector has sufficient balance
+      const collectorBalance = parseFloat(walletBalance)
+      const requiredAmount = parseFloat(job.reward)
+
+      console.log('🔍 Balance check:', {
+        collectorBalance,
+        requiredAmount,
+        walletBalance,
+        jobReward: job.reward
+      })
+
+      if (collectorBalance < requiredAmount) {
+        throw new Error(`Insufficient balance. Required: ${requiredAmount} IOTA, Available: ${collectorBalance} IOTA`)
+      }
+
+      // For now, simulate the escrow locking (will be replaced with real transaction)
+      toast.loading('Locking payment in escrow...', { duration: 2000 })
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
+      // Update job status to claimed
+      const walletAddress = localStorage.getItem('wallet_address')
       const updatedJob = {
         id: jobId,
         status: 'claimed',
         claimedAt: new Date().toISOString(),
-        collector: 'current_user',
+        collector: walletAddress,
+        lockedAmount: requiredAmount,
+        escrowTransactionId: 'escrow_' + Date.now(),
       }
-      
+
       dispatch({ type: ACTIONS.UPDATE_JOB, payload: updatedJob })
-      toast.success('Job claimed successfully!')
-      
+
+      // Debug logging
+      console.log('🎯 Job claimed successfully:', {
+        jobId,
+        collector: walletAddress,
+        status: 'claimed',
+        lockedAmount: requiredAmount
+      })
+
+      // Update wallet balance but keep connection
+      const newBalance = collectorBalance - requiredAmount
+      localStorage.setItem('wallet_balance', newBalance.toString())
+
+      // Ensure wallet connection persists
+      localStorage.setItem('wallet_connected', 'true')
+      localStorage.setItem('wallet_address', walletAddress)
+
+      console.log('💰 Balance updated:', {
+        previous: collectorBalance,
+        new: newBalance,
+        locked: requiredAmount
+      })
+
+      toast.success(
+        <div>
+          <div className="font-semibold">🎉 Job Claimed Successfully!</div>
+          <div className="text-sm text-gray-600 mt-1">{requiredAmount} IOTA locked in escrow</div>
+          <div className="text-sm text-blue-600 mt-1">Check "My Jobs" tab to see your claimed job</div>
+        </div>,
+        { duration: 6000 }
+      )
+
     } catch (error) {
-      toast.error('Failed to claim job')
+      toast.error(error.message || 'Failed to claim job')
       dispatch({ type: ACTIONS.SET_ERROR, payload: error.message })
+      throw error
     } finally {
       dispatch({ type: ACTIONS.SET_LOADING, payload: false })
     }
@@ -292,6 +357,132 @@ export const AppStateProvider = ({ children }) => {
     }
   }
 
+  const submitDispute = async (jobId, disputeData) => {
+    dispatch({ type: ACTIONS.SET_LOADING, payload: true })
+
+    try {
+      const job = state.jobs.find(j => j.id === jobId)
+      if (!job) {
+        throw new Error('Job not found')
+      }
+
+      // Update job with dispute information
+      const disputedJob = {
+        id: jobId,
+        status: 'disputed',
+        disputeData: {
+          ...disputeData,
+          disputeId: 'dispute_' + Date.now(),
+          status: 'pending_user_response',
+          submittedAt: new Date().toISOString()
+        }
+      }
+
+      dispatch({ type: ACTIONS.UPDATE_JOB, payload: disputedJob })
+      toast.success('Dispute submitted. User will be notified to respond.')
+
+    } catch (error) {
+      toast.error('Failed to submit dispute: ' + error.message)
+      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message })
+    } finally {
+      dispatch({ type: ACTIONS.SET_LOADING, payload: false })
+    }
+  }
+
+  const respondToDispute = async (jobId, response) => {
+    dispatch({ type: ACTIONS.SET_LOADING, payload: true })
+
+    try {
+      const job = state.jobs.find(j => j.id === jobId)
+      if (!job || !job.disputeData) {
+        throw new Error('Dispute not found')
+      }
+
+      if (response.action === 'accept') {
+        // User accepts the dispute - pay the disputed amount
+        const updatedJob = {
+          id: jobId,
+          status: 'completed',
+          disputeData: {
+            ...job.disputeData,
+            status: 'resolved_accepted',
+            userResponse: response,
+            resolvedAt: new Date().toISOString(),
+            finalAmount: job.disputeData.proposedAmount
+          }
+        }
+
+        dispatch({ type: ACTIONS.UPDATE_JOB, payload: updatedJob })
+
+        // Process payment with disputed amount
+        await processJobPayment(jobId, { ...job, reward: job.disputeData.proposedAmount })
+
+        toast.success('Dispute resolved. Payment processed with agreed amount.')
+
+      } else {
+        // User rejects the dispute - escalate to platform review
+        const updatedJob = {
+          id: jobId,
+          status: 'disputed',
+          disputeData: {
+            ...job.disputeData,
+            status: 'escalated_to_platform',
+            userResponse: response,
+            escalatedAt: new Date().toISOString(),
+            reviewDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days
+          }
+        }
+
+        dispatch({ type: ACTIONS.UPDATE_JOB, payload: updatedJob })
+        toast.info('Dispute escalated to platform review. Decision within 2-3 days.')
+      }
+
+    } catch (error) {
+      toast.error('Failed to respond to dispute: ' + error.message)
+      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message })
+    } finally {
+      dispatch({ type: ACTIONS.SET_LOADING, payload: false })
+    }
+  }
+
+  const platformResolveDispute = async (jobId, decision) => {
+    dispatch({ type: ACTIONS.SET_LOADING, payload: true })
+
+    try {
+      const job = state.jobs.find(j => j.id === jobId)
+      if (!job || !job.disputeData) {
+        throw new Error('Dispute not found')
+      }
+
+      const finalAmount = decision === 'original' ? job.reward : job.disputeData.proposedAmount
+
+      const resolvedJob = {
+        id: jobId,
+        status: 'completed',
+        disputeData: {
+          ...job.disputeData,
+          status: 'resolved_by_platform',
+          platformDecision: decision,
+          finalAmount: finalAmount,
+          resolvedAt: new Date().toISOString()
+        }
+      }
+
+      dispatch({ type: ACTIONS.UPDATE_JOB, payload: resolvedJob })
+
+      // Process payment with platform-decided amount
+      await processJobPayment(jobId, { ...job, reward: finalAmount })
+
+      toast.success(`Dispute resolved by platform. Payment: ${finalAmount} IOTA`)
+
+    } catch (error) {
+      toast.error('Failed to resolve dispute: ' + error.message)
+      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message })
+    } finally {
+      dispatch({ type: ACTIONS.SET_LOADING, payload: false })
+    }
+  }
+
   // Load saved user role on mount
   useEffect(() => {
     const savedRole = localStorage.getItem('userRole')
@@ -328,6 +519,9 @@ export const AppStateProvider = ({ children }) => {
     claimJob,
     completeJob,
     releasePayment,
+    submitDispute,
+    respondToDispute,
+    platformResolveDispute,
     dispatch,
   }
 

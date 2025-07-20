@@ -1,22 +1,24 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-hot-toast'
-import { 
-  Truck, 
-  MapPin, 
-  Clock, 
-  CheckCircle, 
+import {
+  Truck,
+  MapPin,
+  Clock,
+  CheckCircle,
   Coins,
   TrendingUp,
   Search,
   Filter,
-  Navigation
+  Navigation,
+  Lock
 } from 'lucide-react'
 import { useAppState } from '@store/AppStateProvider'
 import { useWallet } from '@store/WalletProvider'
 import JobCard from '@components/jobs/JobCard'
 import JobMap from '@components/map/JobMap'
 import PriceVerificationModal from '@components/jobs/PriceVerificationModal'
+import JobDetailsModal from '@components/jobs/JobDetailsModal'
 
 const CollectorDashboard = () => {
   const [activeTab, setActiveTab] = useState('available')
@@ -24,9 +26,11 @@ const CollectorDashboard = () => {
   const [sortBy, setSortBy] = useState('newest')
   const [showPriceVerification, setShowPriceVerification] = useState(false)
   const [selectedJobForVerification, setSelectedJobForVerification] = useState(null)
+  const [showJobDetails, setShowJobDetails] = useState(false)
+  const [selectedJobForDetails, setSelectedJobForDetails] = useState(null)
   
   const { jobs, claimJob, completeJob, userProfile } = useAppState()
-  const { isConnected } = useWallet()
+  const { isConnected, balance, formatBalanceWithMYR, address } = useWallet()
 
   // Filter and sort jobs
   const filteredJobs = jobs
@@ -38,9 +42,9 @@ const CollectorDashboard = () => {
         case 'available':
           return job.status === 'posted' && matchesSearch
         case 'claimed':
-          return job.status === 'claimed' && job.collector === 'current_user' && matchesSearch
+          return job.status === 'claimed' && job.collector === address && matchesSearch
         case 'completed':
-          return ['completed', 'paid'].includes(job.status) && job.collector === 'current_user' && matchesSearch
+          return ['completed', 'paid'].includes(job.status) && job.collector === address && matchesSearch
         default:
           return matchesSearch
       }
@@ -59,47 +63,54 @@ const CollectorDashboard = () => {
     })
 
   const tabs = [
-    { 
-      id: 'available', 
-      label: 'Available', 
-      icon: MapPin, 
-      count: jobs.filter(j => j.status === 'posted').length 
+    {
+      id: 'available',
+      label: 'Available',
+      icon: MapPin,
+      count: jobs.filter(j => j.status === 'posted').length
     },
-    { 
-      id: 'claimed', 
-      label: 'My Jobs', 
-      icon: Truck, 
-      count: jobs.filter(j => j.status === 'claimed' && j.collector === 'current_user').length 
+    {
+      id: 'claimed',
+      label: 'My Jobs',
+      icon: Truck,
+      count: jobs.filter(j => j.status === 'claimed' && j.collector === address).length
     },
-    { 
-      id: 'completed', 
-      label: 'Completed', 
-      icon: CheckCircle, 
-      count: jobs.filter(j => ['completed', 'paid'].includes(j.status) && j.collector === 'current_user').length 
+    {
+      id: 'completed',
+      label: 'Completed',
+      icon: CheckCircle,
+      count: jobs.filter(j => ['completed', 'paid'].includes(j.status) && j.collector === address).length
     },
   ]
 
   const stats = [
     {
-      label: 'Jobs Completed',
-      value: userProfile.jobsCompleted,
-      icon: CheckCircle,
+      label: 'Available Balance',
+      value: isConnected ? formatBalanceWithMYR(balance) : 'Connect Wallet',
+      icon: Coins,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
-      label: 'Total Earned',
-      value: `RM ${userProfile.totalEarned}`,
-      icon: Coins,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100'
+      label: 'Locked in Escrow',
+      value: `${formatBalanceWithMYR(userProfile.lockedBalance || 0)}`,
+      icon: Lock,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100'
     },
     {
-      label: 'Reputation',
-      value: userProfile.reputationScore,
-      icon: TrendingUp,
+      label: 'Jobs Completed',
+      value: userProfile.jobsCompleted,
+      icon: CheckCircle,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
+    },
+    {
+      label: 'Total Earned',
+      value: `RM ${userProfile.totalEarned}`,
+      icon: TrendingUp,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-100'
     }
   ]
 
@@ -113,19 +124,23 @@ const CollectorDashboard = () => {
       case 'posted':
         try {
           await claimJob(job.id)
-          toast.success('Job claimed successfully!')
+          // Auto-switch to "My Jobs" tab to show claimed job
+          setTimeout(() => {
+            setActiveTab('claimed')
+          }, 3000)
         } catch (error) {
-          toast.error('Failed to claim job')
+          toast.error(error.message || 'Failed to claim job')
         }
         break
       case 'claimed':
-        // Open price verification modal
-        setSelectedJobForVerification(job)
-        setShowPriceVerification(true)
+        // Show job details with address and dispute options
+        setSelectedJobForDetails(job)
+        setShowJobDetails(true)
         break
       default:
-        // Navigate to job details
-        window.location.href = `/job/${job.id}`
+        // Show job details for other statuses
+        setSelectedJobForDetails(job)
+        setShowJobDetails(true)
     }
   }
 
@@ -216,7 +231,7 @@ const CollectorDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => {
             const Icon = stat.icon
             return (
@@ -384,6 +399,16 @@ const CollectorDashboard = () => {
         job={selectedJobForVerification}
         onConfirmPrice={handlePriceVerification}
         onReportIssue={handleReportIssue}
+      />
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        job={selectedJobForDetails}
+        isOpen={showJobDetails}
+        onClose={() => {
+          setShowJobDetails(false)
+          setSelectedJobForDetails(null)
+        }}
       />
     </div>
   )
